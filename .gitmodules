@@ -1,7 +1,3 @@
 [submodule "src/utils"]
 	path = src/utils
 	url = https://github.com/flavio2018/utils.git
-[submodule "src/model/dntm"]
-	path = src/model/dntm
-	url = https://github.com/flavio2018/dntm.git
-	branch = mnist

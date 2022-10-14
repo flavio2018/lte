@@ -1,0 +1,9 @@
+/data/
+/hydra/
+/models/checkpoints/
+/slurm/
+wandb/
+/reports/
+__pycache__/
+src.egg-info/
+.ipynb_checkpoints/

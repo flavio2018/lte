@@ -1,0 +1,19 @@
+name: lte
+channels:
+        - conda-forge
+        - defaults
+        - pytorch
+dependencies:
+        - cudatoolkit=11.6
+        - hydra-core
+        - ipython
+        - ipykernel
+        - ipywidgets
+        - matplotlib
+        - notebook
+        - numpy
+        - pandas
+        - pytorch::pytorch
+        - seaborn
+        - torchmetrics
+        - wandb

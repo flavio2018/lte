@@ -113,33 +113,45 @@ class ForLoop:
         return self.accumulator_code, valueless_code
 
 
-def generate_sample(length, nesting):
-    used_letters = list("abcdefghjklmnopqrstuvwxyz")
-    stack = []
-    ops = [Addition(), Subtraction(), Multiplication(), Assignment(used_letters),
-           IfStatement(), ForLoop(used_letters, length)]
-    program = ''
+def generate_sample(length, nesting, split='train'):
+    program_split = ''
     
-    for i in range(nesting):
-        op = ops[np.random.randint(len(ops))]
-        values = []
-        codes = []
+    while(program_split != split):
+        used_letters = list("abcdefghjklmnopqrstuvwxyz")
+        stack = []
+        ops = [Addition(), Subtraction(), Multiplication(), Assignment(used_letters),
+               IfStatement(), ForLoop(used_letters, length)]
+        program = ''
+        
+        for i in range(nesting):
+            op = ops[np.random.randint(len(ops))]
+            values = []
+            codes = []
 
-        for param in range(op.operands):
-            if not len(stack) == 0 and np.random.rand() > 0.5:
-                value, code = stack.pop()
+            for param in range(op.operands):
+                if not len(stack) == 0 and np.random.rand() > 0.5:
+                    value, code = stack.pop()
+                else:
+                    value = np.random.randint(10**length)
+                    code = str(value)
+                values.append(value)
+                codes.append(code)
+            new_value = op.evaluate(values)
+            if isinstance(op, Assignment) or isinstance(op, ForLoop):
+                new_code, valueless_code = op.generate_code(codes)
+                program += valueless_code + '\n'
             else:
-                value = np.random.randint(10**length)
-                code = str(value)
-            values.append(value)
-            codes.append(code)
-        new_value = op.evaluate(values)
-        if isinstance(op, Assignment) or isinstance(op, ForLoop):
-            new_code, valueless_code = op.generate_code(codes)
-            program += valueless_code + '\n'
+                new_code = op.generate_code(codes)
+            stack.append((new_value, new_code))
+        final_value, final_code = stack.pop()
+        program += "print(" + final_code + ")"
+
+        program_hash = hash(program)
+        if program_hash % 3 == 0:
+            program_split = 'train'
+        elif program_hash % 3 == 1:
+            program_split = 'valid'
         else:
-            new_code = op.generate_code(codes)
-        stack.append((new_value, new_code))
-    final_value, final_code = stack.pop()
-    program += "print(" + final_code + ")"
+            program_split = 'test'
+
     return program, str(final_value)

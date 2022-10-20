@@ -3,7 +3,7 @@
 
 from data.generator import generate_batch, get_vocab_size
 from model.lstm import LSTM
-from utils.rnn_utils import get_mask, get_hidden_mask, reduce_lens, save_states
+from utils.rnn_utils import get_mask, get_hidden_mask, reduce_lens, save_states, populate_first_output, build_first_output
 from utils.wandb_utils import log_weights_gradient, log_params_norm
 import torch
 import wandb
@@ -60,7 +60,9 @@ def train_lstm():
 
 def step(model, sample, target, samples_len, targets_len, loss, opt, device):
 	opt.zero_grad()
+	model.train()
 	outputs = []
+	first_output = {}
 	h_dict, c_dict = {}, {}
 	samples_len = samples_len.copy()
 	targets_len = targets_len.copy()
@@ -71,7 +73,8 @@ def step(model, sample, target, samples_len, targets_len, loss, opt, device):
 		output = model(sample[:, char_pos, :].squeeze(), hidden_mask)
 		samples_len = reduce_lens(samples_len)
 		h_dict, c_dict = save_states(model, h_dict, c_dict, samples_len)
-	outputs.append(output)
+		first_output = populate_first_output(output, samples_len, first_output)
+	outputs.append(build_first_output(first_output))
 	
 	model.set_states(h_dict, c_dict)
 	

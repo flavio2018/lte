@@ -4,7 +4,7 @@
 from data.generator import generate_batch, get_vocab_size
 from model.dntm.DynamicNeuralTuringMachine import DynamicNeuralTuringMachine
 from model.dntm.DynamicNeuralTuringMachineMemory import DynamicNeuralTuringMachineMemory
-from utils.rnn_utils import get_mask, get_hidden_mask, get_reading_mask, reduce_lens, save_states, save_states_dntm
+from utils.rnn_utils import get_mask, get_hidden_mask, get_reading_mask, reduce_lens, save_states_dntm, populate_first_output, build_first_output
 from utils.wandb_utils import log_weights_gradient, log_params_norm
 import torch
 import wandb
@@ -73,7 +73,9 @@ def train_dntm():
 
 def step(model, sample, target, samples_len, targets_len, loss, opt, device):
 	opt.zero_grad()
+	model.train()
 	outputs = []
+	first_output = {}
 	h_dict = {}
 	samples_len = samples_len.copy()
 	targets_len = targets_len.copy()
@@ -89,7 +91,8 @@ def step(model, sample, target, samples_len, targets_len, loss, opt, device):
 		output = model(sample[:, char_pos, :].reshape(feature_size, batch_size), hidden_mask, reading_mask)
 		samples_len = reduce_lens(samples_len)
 		h_dict = save_states_dntm(model, h_dict, samples_len)
-	outputs.append(output)
+		first_output = populate_first_output(output, samples_len, first_output)
+	outputs.append(build_first_output(first_output))
 	
 	model.set_states(h_dict)
 

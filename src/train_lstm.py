@@ -9,10 +9,10 @@ import torch
 import wandb
 
 
-MAX_ITER = 10000
-BS = 16
-LR = 0.001
-LEN = 2
+MAX_ITER = 30000
+BS = 64
+LR = 0.0001
+LEN = 1
 NES = 1
 HID_SIZE = 1024
 DEVICE = 'cuda'
@@ -22,7 +22,8 @@ def train_lstm():
 	model = LSTM(
 		input_size=get_vocab_size(),
 		hidden_size=HID_SIZE,
-		output_size=get_vocab_size()).to(DEVICE)
+		output_size=get_vocab_size(),
+		batch_size=BS).to(DEVICE)
 
 	loss = torch.nn.CrossEntropyLoss(reduction='none')
 	opt = torch.optim.Adam(model.parameters(), lr=LR)
@@ -38,6 +39,7 @@ def train_lstm():
 
 	print("MAX_ITER:", MAX_ITER)
 	print("hidden_size:", HID_SIZE)
+	# print("hidden_2_size:", HID_SIZE)
 	print("lr:", LR)
 	print("optim:", "Adam")
 	print("length:", LEN)
@@ -80,7 +82,7 @@ def step(model, sample, target, samples_len, targets_len, loss, opt, device):
 	h_dict, c_dict = {}, {}
 	samples_len = samples_len.copy()
 	targets_len = targets_len.copy()
-	hid_size = model.h_t.size(1)
+	hid_size = model.h_t_1.size(1)
 
 	for char_pos in range(sample.size(1)):
 		hidden_mask = get_hidden_mask(samples_len, hid_size, device)

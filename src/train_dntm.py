@@ -10,14 +10,14 @@ import torch
 import wandb
 
 
-MAX_ITER = 10000
-N_LOCATIONS = 100
+MAX_ITER = 30000
+N_LOCATIONS = 500
 CONTENT_SIZE = 8
 ADDRESS_SIZE = 8
 HID_SIZE = 100
-BS = 16
+BS = 64
 LR = 0.001
-LEN = 2
+LEN = 1
 NES = 1
 DEVICE = 'cuda'
 

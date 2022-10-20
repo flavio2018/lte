@@ -14,11 +14,15 @@ def get_token2pos():
 	token2pos['\n'] = len(token2pos)
 	return token2pos
 
-def generate_batch(length, nesting, batch_size):
+def get_pos2token():
+	token2pos = get_token2pos()
+	return {p: t for t, p in token2pos.items()}
+
+def generate_batch(length, nesting, batch_size, split='train'):
 	vocab_size = get_vocab_size()
 	token2pos = get_token2pos()
 	
-	few_samples = [generate_sample(length=length, nesting=nesting) for i in range(batch_size)]
+	few_samples = [generate_sample(length=length, nesting=nesting, split=split) for i in range(batch_size)]
 	
 	samples_len = [len(x) for x, y in few_samples]
 	targets_len = [len(y) for x, y in few_samples]

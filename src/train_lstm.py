@@ -122,6 +122,7 @@ def step(model, sample, target, samples_len, targets_len, loss, opt, device):
 	return avg_loss.item(), acc.item()
 
 
+@torch.no_grad()
 def valid_step(model, sample, target, samples_len, targets_len, loss, device):
 	model.eval()
 	outputs = []

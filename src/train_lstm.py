@@ -1,7 +1,7 @@
 """Script to train an LSTM on the LTE task."""
 
 
-from data.generator import generate_batch, get_vocab_size, get_pos2token
+from data.generator import generate_batch, get_vocab_size
 from model.lstm import LSTM
 from utils.rnn_utils import get_mask, get_hidden_mask, reduce_lens, save_states, populate_first_output, build_first_output, batch_acc, eval_lstm_padded
 from utils.wandb_utils import log_weights_gradient, log_params_norm

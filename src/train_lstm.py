@@ -3,7 +3,8 @@
 
 from data.generator import generate_batch, get_vocab_size
 from model.lstm import LSTM
-from utils.rnn_utils import get_mask, get_hidden_mask, reduce_lens, save_states, populate_first_output, build_first_output, batch_acc, eval_lstm_padded
+from model.test import eval_lstm_padded
+from utils.rnn_utils import get_mask, get_hidden_mask, reduce_lens, save_states, populate_first_output, build_first_output, batch_acc
 from utils.wandb_utils import log_weights_gradient, log_params_norm
 import torch
 import wandb
@@ -46,6 +47,7 @@ def train_lstm():
 	print("nesting:", NES)
 	print("batch_size:", BS)
 	print("device:", DEVICE)
+	print()
 
 	
 	for i_step in range(MAX_ITER):

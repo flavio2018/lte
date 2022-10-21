@@ -1,26 +1,18 @@
-from utils.rnn_utils import make_tensor, make_padded_batch
+from utils.rnn_utils import make_tensor, make_padded_batch, get_token2pos
 from data.data import generate_sample
 
 
 def get_vocab_chars():
 	return set('abcdefghijklmnopqrstuvwxyz0123456789()+*-=<>: ')
 
+
 def get_vocab_size():
 	return len(get_vocab_chars()) + 1
 
-def get_token2pos():
-	vocab_chars = get_vocab_chars()
-	token2pos = {t: p for p, t in enumerate(vocab_chars)}
-	token2pos['\n'] = len(token2pos)
-	return token2pos
-
-def get_pos2token():
-	token2pos = get_token2pos()
-	return {p: t for t, p in token2pos.items()}
 
 def generate_batch(length, nesting, batch_size, split='train'):
 	vocab_size = get_vocab_size()
-	token2pos = get_token2pos()
+	token2pos = get_token2pos(get_vocab_chars())
 	
 	few_samples = [generate_sample(length=length, nesting=nesting, split=split) for i in range(batch_size)]
 	

@@ -132,7 +132,10 @@ def generate_sample(length, nesting, split='train'):
                 if not len(stack) == 0 and np.random.rand() > 0.5:
                     value, code = stack.pop()
                 else:
-                    value = np.random.randint(10**length)
+                    if isinstance(op, Multiplication) and param == 0:  # for the first parameter of multiplication
+                        value = np.random.randint(4*length)
+                    else:
+                        value = np.random.randint(10**length)
                     code = str(value)
                 values.append(value)
                 codes.append(code)

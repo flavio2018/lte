@@ -51,6 +51,7 @@ def train_lstm():
 
 	
 	for i_step in range(MAX_ITER):
+		LEN, NES = torch.randint(1, MAX_LEN+1, (1,)).item(), torch.randint(1, MAX_NES+1, (1,)).item()
 		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(length=LEN, nesting=NES, batch_size=BS)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(DEVICE), padded_targets_batch.to(DEVICE)
 		loss_step, acc_step = step(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, opt, DEVICE)
@@ -65,6 +66,7 @@ def train_lstm():
 		if i_step % 100 == 0:
 			n_valid = i_step / 100
 			for v_step in range(10):
+				LEN, NES = torch.randint(1, MAX_LEN+1, (1,)).item(), torch.randint(1, MAX_NES+1, (1,)).item()
 				padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(length=LEN, nesting=NES, batch_size=BS, split='valid')
 				padded_samples_batch, padded_targets_batch = padded_samples_batch.to(DEVICE), padded_targets_batch.to(DEVICE)
 				loss_valid_step, acc_valid_step = valid_step(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, DEVICE)

@@ -1,0 +1,17 @@
+defaults:
+        - override hydra/hydra_logging: none
+        - override hydra/job_logging: custom
+        - _self_
+
+hydra:
+  run:
+    dir: ../hydra/${hydra.job.name}/${now:%Y-%B-%d_%H-%M-%S}
+
+codename: lstm
+max_iter: 20000
+bs: 8
+lr: 6e-4
+max_len: 1
+max_nes: 1
+hid_size: 400
+device: 'cuda'

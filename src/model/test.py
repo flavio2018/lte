@@ -13,7 +13,7 @@ def target_tensors_to_str(y_t):
 def lstm_fwd_padded_batch(model, sample, target, samples_len, targets_len, device):
 	model.eval()
 	outputs = []
-	h_dict, c_dict = {}, {}
+	h_dict, c_dict = {1: {}, 2: {}}, {1: {}, 2: {}}
 	first_output = {}
 	samples_len = samples_len.copy()
 	targets_len = targets_len.copy()

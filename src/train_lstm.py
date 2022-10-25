@@ -69,7 +69,7 @@ def step(model, sample, target, samples_len, targets_len, loss, opt, device):
 	model.train()
 	outputs = []
 	first_output = {}
-	h_dict, c_dict = {}, {}
+	h_dict, c_dict = {1: {}, 2: {}}, {1: {}, 2: {}}
 	samples_len = samples_len.copy()
 	targets_len = targets_len.copy()
 	hid_size = model.h_t_1.size(1)
@@ -115,7 +115,7 @@ def valid_step(model, sample, target, samples_len, targets_len, loss, device):
 	model.eval()
 	outputs = []
 	first_output = {}
-	h_dict, c_dict = {}, {}
+	h_dict, c_dict = {1: {}, 2: {}}, {1: {}, 2: {}}
 	samples_len = samples_len.copy()
 	targets_len = targets_len.copy()
 	hid_size = model.h_t_1.size(1)

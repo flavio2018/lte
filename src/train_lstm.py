@@ -32,6 +32,8 @@ def train_lstm(cfg):
 		settings=wandb.Settings(start_method="fork"),
 	)
 	wandb.run.name = cfg.codename
+	wandb.config.update(omegaconf.OmegaConf.to_container(
+        cfg, resolve=True, throw_on_missing=True))
 
 
 	for i_step in range(cfg.max_iter):

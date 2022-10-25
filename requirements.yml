@@ -16,4 +16,5 @@ dependencies:
         - pytorch::pytorch
         - seaborn
         - torchmetrics
+        - tqdm
         - wandb

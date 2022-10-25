@@ -7,27 +7,23 @@ from model.test import eval_lstm_padded
 from utils.rnn_utils import get_mask, get_hidden_mask, reduce_lens, save_states, populate_first_output, build_first_output, batch_acc
 from utils.wandb_utils import log_weights_gradient, log_params_norm
 import torch
+import hydra
+import omegaconf
 import wandb
 
 
-MAX_ITER = 30000
-BS = 64
-LR = 0.0001
-LEN = 1
-NES = 1
-HID_SIZE = 1024
-DEVICE = 'cuda'
-
-
-def train_lstm():
+@hydra.main(config_path="../conf/local", config_name="train_lstm")
+def train_lstm(cfg):
+	print(omegaconf.OmegaConf.to_yaml(cfg))
+    
 	model = LSTM(
 		input_size=get_vocab_size(),
-		hidden_size=HID_SIZE,
+		hidden_size=cfg.hid_size,
 		output_size=get_vocab_size(),
-		batch_size=BS).to(DEVICE)
+		batch_size=cfg.bs).to(cfg.device)
 
 	loss = torch.nn.CrossEntropyLoss(reduction='none')
-	opt = torch.optim.Adam(model.parameters(), lr=LR)
+	opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
 
 	wandb.init(
 		project="lte",
@@ -35,26 +31,14 @@ def train_lstm():
 		mode="online",
 		settings=wandb.Settings(start_method="fork"),
 	)
-	wandb.run.name = "lstm"
+	wandb.run.name = cfg.codename
 
 
-	print("MAX_ITER:", MAX_ITER)
-	print("hidden_size:", HID_SIZE)
-	# print("hidden_2_size:", HID_SIZE)
-	print("lr:", LR)
-	print("optim:", "Adam")
-	print("length:", LEN)
-	print("nesting:", NES)
-	print("batch_size:", BS)
-	print("device:", DEVICE)
-	print()
-
-	
-	for i_step in range(MAX_ITER):
-		LEN, NES = torch.randint(1, MAX_LEN+1, (1,)).item(), torch.randint(1, MAX_NES+1, (1,)).item()
-		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(length=LEN, nesting=NES, batch_size=BS)
-		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(DEVICE), padded_targets_batch.to(DEVICE)
-		loss_step, acc_step = step(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, opt, DEVICE)
+	for i_step in range(cfg.max_iter):
+		LEN, NES = torch.randint(1, cfg.max_len+1, (1,)).item(), torch.randint(1, cfg.max_nes+1, (1,)).item()
+		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(length=LEN, nesting=NES, batch_size=cfg.bs)
+		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
+		loss_step, acc_step = step(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, opt, cfg.device)
 		wandb.log({
 				"loss": loss_step,
 				"acc": acc_step,
@@ -66,16 +50,16 @@ def train_lstm():
 		if i_step % 100 == 0:
 			n_valid = i_step / 100
 			for v_step in range(10):
-				LEN, NES = torch.randint(1, MAX_LEN+1, (1,)).item(), torch.randint(1, MAX_NES+1, (1,)).item()
-				padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(length=LEN, nesting=NES, batch_size=BS, split='valid')
-				padded_samples_batch, padded_targets_batch = padded_samples_batch.to(DEVICE), padded_targets_batch.to(DEVICE)
-				loss_valid_step, acc_valid_step = valid_step(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, DEVICE)
+				LEN, NES = torch.randint(1, cfg.max_len+1, (1,)).item(), torch.randint(1, cfg.max_nes+1, (1,)).item()
+				padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(length=LEN, nesting=NES, batch_size=cfg.bs, split='valid')
+				padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
+				loss_valid_step, acc_valid_step = valid_step(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 				wandb.log({
 					"val_loss": loss_valid_step,
 					"val_acc": acc_valid_step,
 					"val_update": n_valid*10 + v_step,
 				})
-			eval_lstm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, DEVICE)
+			eval_lstm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, cfg.device)
 
 
 def step(model, sample, target, samples_len, targets_len, loss, opt, device):

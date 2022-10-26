@@ -8,36 +8,29 @@ from model.test import eval_dntm_padded
 from utils.rnn_utils import get_mask, get_hidden_mask, get_reading_mask, reduce_lens, save_states_dntm, populate_first_output, build_first_output, batch_acc
 from utils.wandb_utils import log_weights_gradient, log_params_norm
 import torch
+import hydra
+import omegaconf
 import wandb
 
 
-MAX_ITER = 30000
-N_LOCATIONS = 500
-CONTENT_SIZE = 8
-ADDRESS_SIZE = 8
-HID_SIZE = 100
-BS = 64
-LR = 0.001
-LEN = 1
-NES = 1
-DEVICE = 'cuda'
+@hydra.main(config_path="../conf/local", config_name="train_dntm")
+def train_dntm(cfg):
+	print(omegaconf.OmegaConf.to_yaml(cfg))
 
-
-def train_dntm():
 	dntm_memory = DynamicNeuralTuringMachineMemory(
-		n_locations=N_LOCATIONS,
-		content_size=CONTENT_SIZE,
-		address_size=ADDRESS_SIZE,
+		n_locations=cfg.mem_size,
+		content_size=cfg.content_size,
+		address_size=cfg.address_size,
 		controller_input_size=get_vocab_size(),
-		controller_hidden_state_size=HID_SIZE)
+		controller_hidden_state_size=cfg.hid_size)
 	model = DynamicNeuralTuringMachine(
 		memory=dntm_memory,
 		controller_hidden_state_size=100,
 		controller_input_size=get_vocab_size(),
-		controller_output_size=get_vocab_size()).to(DEVICE)
+		controller_output_size=get_vocab_size()).to(cfg.device)
 
 	loss = torch.nn.CrossEntropyLoss(reduction='none')
-	opt = torch.optim.Adam(model.parameters(), lr=LR)
+	opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
 
 	wandb.init(
 		project="lte",
@@ -45,25 +38,15 @@ def train_dntm():
 		mode="online",
 		settings=wandb.Settings(start_method="fork"),
 	)
-	wandb.run.name = "dntm"
-
-	print("MAX_ITER:", MAX_ITER)
-	print("hidden_size:", HID_SIZE)
-	print("lr:", LR)
-	print("optim:", "Adam")
-	print("length:", LEN)
-	print("nesting:", NES)
-	print("batch_size:", BS)
-	print("device:", DEVICE)
-	print("n_locations:", N_LOCATIONS)
-	print("content_size:", CONTENT_SIZE)
-	print("address_size:", ADDRESS_SIZE)
+	wandb.run.name = cfg.codename
+	wandb.config.update(omegaconf.OmegaConf.to_container(
+        cfg, resolve=True, throw_on_missing=True))
 
 
-	for i_step in range(MAX_ITER):
-		batched_samples, batched_targets, samples_len, targets_len = generate_batch(length=LEN, nesting=NES, batch_size=BS)
-		batched_samples, batched_targets = batched_samples.to(DEVICE), batched_targets.to(DEVICE)
-		loss_step, acc_step = step(model, batched_samples, batched_targets, samples_len, targets_len, loss, opt, DEVICE)
+	for i_step in range(cfg.max_iter):
+		batched_samples, batched_targets, samples_len, targets_len = generate_batch(length=cfg.max_len, nesting=cfg.max_nes, batch_size=cfg.bs)
+		batched_samples, batched_targets = batched_samples.to(cfg.device), batched_targets.to(cfg.device)
+		loss_step, acc_step = step(model, batched_samples, batched_targets, samples_len, targets_len, loss, opt, cfg.device)
 		wandb.log({
 				"loss": loss_step,
 				"acc": acc_step,
@@ -75,15 +58,15 @@ def train_dntm():
 		if i_step % 100 == 0:
 			n_valid = i_step / 100
 			for v_step in range(10):
-				padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(length=LEN, nesting=NES, batch_size=BS, split='valid')
-				padded_samples_batch, padded_targets_batch = padded_samples_batch.to(DEVICE), padded_targets_batch.to(DEVICE)
-				loss_valid_step, acc_valid_step = valid_step(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, DEVICE)
+				padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(length=cfg.max_len, nesting=cfg.max_nes, batch_size=cfg.bs, split='valid')
+				padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
+				loss_valid_step, acc_valid_step = valid_step(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 				wandb.log({
 					"val_loss": loss_valid_step,
 					"val_acc": acc_valid_step,
 					"val_update": n_valid*10 + v_step,
 				})
-			eval_dntm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, DEVICE)
+			eval_dntm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, cfg.device)
 
 
 def step(model, sample, target, samples_len, targets_len, loss, opt, device):

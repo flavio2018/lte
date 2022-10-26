@@ -4,6 +4,7 @@
 from data.generator import generate_batch, get_vocab_size
 from model.dntm.DynamicNeuralTuringMachine import DynamicNeuralTuringMachine
 from model.dntm.DynamicNeuralTuringMachineMemory import DynamicNeuralTuringMachineMemory
+from model.test import eval_dntm_padded
 from utils.rnn_utils import get_mask, get_hidden_mask, get_reading_mask, reduce_lens, save_states_dntm, populate_first_output, build_first_output, batch_acc
 from utils.wandb_utils import log_weights_gradient, log_params_norm
 import torch
@@ -82,6 +83,7 @@ def train_dntm():
 					"val_acc": acc_valid_step,
 					"val_update": n_valid*10 + v_step,
 				})
+			eval_dntm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, DEVICE)
 
 
 def step(model, sample, target, samples_len, targets_len, loss, opt, device):

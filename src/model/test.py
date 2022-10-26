@@ -1,6 +1,6 @@
 import torch
 from data.generator import get_pos2token
-from utils.rnn_utils import save_states, get_hidden_mask, reduce_lens, populate_first_output, build_first_output
+from utils.rnn_utils import save_states, save_states_dntm, get_hidden_mask, get_reading_mask, reduce_lens, populate_first_output, build_first_output
 
 
 def target_tensors_to_str(y_t):
@@ -38,6 +38,41 @@ def lstm_fwd_padded_batch(model, sample, target, samples_len, targets_len, devic
 	return outputs
 
 
+@torch.no_grad()
+def dntm_fwd_padded_batch(model, sample, target, samples_len, targets_len, device):
+	model.eval()
+	outputs = []
+	h_dict = {}
+	first_output = {}
+	samples_len = samples_len.copy()
+	targets_len = targets_len.copy()
+	feature_size = sample.size(2)
+	batch_size = sample.size(0)
+	
+	model.prepare_for_batch(sample, sample.device)
+	hid_size = model.controller_hidden_state.size(0)
+	mem_size = model.memory.overall_memory_size
+	for char_pos in range(sample.size(1)):
+		hidden_mask = get_hidden_mask(samples_len, hid_size, device)
+		reading_mask = get_reading_mask(samples_len, mem_size, device)
+		output = model(sample[:, char_pos, :].reshape(feature_size, batch_size), hidden_mask, reading_mask)
+		samples_len = reduce_lens(samples_len)
+		h_dict = save_states_dntm(model, h_dict, samples_len)
+		first_output = populate_first_output(output, samples_len, first_output)
+	outputs.append(build_first_output(first_output))
+
+	model.set_states(h_dict)
+
+	targets_len_copy = targets_len.copy()
+	for char_pos in range(target.size(1) - 1):
+		hidden_mask = get_hidden_mask(targets_len_copy, hid_size, device)
+		reading_mask = get_reading_mask(samples_len, mem_size, device)
+		output = model(target[:, char_pos, :].reshape(feature_size, batch_size), hidden_mask, reading_mask)
+		targets_len_copy = reduce_lens(targets_len_copy)
+		outputs.append(output)
+	return outputs
+
+
 def eval_padded(outputs, target, sample):
 	BS = target.size(0)
 
@@ -54,4 +89,9 @@ def eval_padded(outputs, target, sample):
 
 def eval_lstm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device):
 	outputs = lstm_fwd_padded_batch(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device)
+	eval_padded(outputs, padded_targets_batch, padded_samples_batch)
+
+
+def eval_dntm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device):
+	outputs = dntm_fwd_padded_batch(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device)
 	eval_padded(outputs, padded_targets_batch, padded_samples_batch)

@@ -6,7 +6,7 @@ from model.dntm.DynamicNeuralTuringMachine import DynamicNeuralTuringMachine
 from model.dntm.DynamicNeuralTuringMachineMemory import DynamicNeuralTuringMachineMemory
 from model.test import eval_dntm_padded
 from utils.rnn_utils import get_mask, get_hidden_mask, get_reading_mask, reduce_lens, save_states_dntm, populate_first_output, build_first_output, batch_acc
-from utils.wandb_utils import log_weights_gradient, log_params_norm
+from utils.wandb_utils import log_weights_gradient, log_params_norm, log_intermediate_values_norm
 import torch
 import hydra
 import omegaconf

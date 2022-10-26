@@ -25,7 +25,7 @@ def train_dntm(cfg):
 		controller_hidden_state_size=cfg.hid_size)
 	model = DynamicNeuralTuringMachine(
 		memory=dntm_memory,
-		controller_hidden_state_size=100,
+		controller_hidden_state_size=cfg.hid_size,
 		controller_input_size=get_vocab_size(),
 		controller_output_size=get_vocab_size()).to(cfg.device)
 
@@ -54,6 +54,7 @@ def train_dntm(cfg):
 			})
 		log_weights_gradient(model, i_step)
 		log_params_norm(model, i_step)
+		log_intermediate_values_norm(model, i_step)
 
 		if i_step % 100 == 0:
 			n_valid = i_step / 100

@@ -113,7 +113,7 @@ def step(model, sample, target, samples_len, targets_len, loss, opt, device):
 		count_nonzero += (char_loss != 0).sum()
 		cumulative_loss += torch.sum(char_loss)
 	avg_loss = cumulative_loss / count_nonzero
-	acc = batch_acc(outputs, target, loss_masks)
+	acc = batch_acc(outputs, target, get_vocab_size())
 
 	avg_loss.backward()
 	opt.step()
@@ -164,7 +164,7 @@ def valid_step(model, sample, target, samples_len, targets_len, loss, device):
 		count_nonzero += (char_loss != 0).sum()
 		cumulative_loss += torch.sum(char_loss)
 	avg_loss = cumulative_loss / count_nonzero
-	acc = batch_acc(outputs, target, loss_masks)
+	acc = batch_acc(outputs, target,  get_vocab_size())
 
 	return avg_loss.item(), acc.item()
 

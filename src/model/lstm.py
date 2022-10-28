@@ -74,7 +74,7 @@ class DeepLSTM(torch.nn.Module):
         self.h_t_2, self.c_t_2 = self.h_t_2 * hidden_mask, self.c_t_2 * hidden_mask
 
         self.h_t_1, self.c_t_1 = self.lstm_cell_1(x, (self.h_t_1, self.c_t_1))
-        self.h_t_2, self.c_t_2 = self.lstm_cell_2(self.h_t_1, (self.h_t_2, self.c_t_2))
+        self.h_t_2, self.c_t_2 = self.lstm_cell_2(self.h_t_1 * hidden_mask, (self.h_t_2, self.c_t_2))
         return self.h_t_2 @ self.W_o.T + self.b_o
 
     def detach_states(self):

@@ -8,12 +8,13 @@ def get_vocab_chars():
 
 
 def get_vocab_size():
-	return len(get_vocab_chars()) + 1
+	return len(get_vocab_chars()) + 2
 
 
 def get_token2pos():
 	token2pos = {t: p for p, t in enumerate(get_vocab_chars())}
 	token2pos['\n'] = len(token2pos)
+	token2pos['#'] = len(token2pos)  # padding
 	return token2pos
 
 

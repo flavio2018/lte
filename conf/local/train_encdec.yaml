@@ -7,7 +7,7 @@ hydra:
   run:
     dir: ../hydra/${hydra.job.name}/${now:%Y-%B-%d_%H-%M-%S}
 
-codename: lstm
+codename: encdec
 max_iter: 10000
 bs: 64
 lr: 3e-4

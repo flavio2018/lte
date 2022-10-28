@@ -7,11 +7,14 @@ hydra:
   run:
     dir: ../hydra/${hydra.job.name}/${now:%Y-%B-%d_%H-%M-%S}
 
-codename: lstm
+codename: dntm
 max_iter: 10000
 bs: 64
 lr: 3e-4
 max_len: 4
 max_nes: 1
-hid_size: 400
+hid_size: 100
+mem_size: 100
+content_size: 8
+address_size: 8
 device: 'cuda'

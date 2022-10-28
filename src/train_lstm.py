@@ -2,8 +2,8 @@
 
 
 from data.generator import generate_batch, get_vocab_size
-from model.lstm import LSTM
-from model.test import eval_lstm_padded
+from model.lstm import LSTM, DeepLSTM
+from model.test import eval_lstm_padded, compute_loss
 from utils.rnn_utils import get_mask, get_hidden_mask, reduce_lens, save_states, populate_first_output, build_first_output, batch_acc
 from utils.wandb_utils import log_weights_gradient, log_params_norm
 import torch
@@ -15,8 +15,8 @@ import wandb
 @hydra.main(config_path="../conf/local", config_name="train_lstm")
 def train_lstm(cfg):
 	print(omegaconf.OmegaConf.to_yaml(cfg))
-    
-	model = LSTM(
+	
+	model = DeepLSTM(
 		input_size=get_vocab_size(),
 		hidden_size=cfg.hid_size,
 		output_size=get_vocab_size(),
@@ -33,7 +33,7 @@ def train_lstm(cfg):
 	)
 	wandb.run.name = cfg.codename
 	wandb.config.update(omegaconf.OmegaConf.to_container(
-        cfg, resolve=True, throw_on_missing=True))
+		cfg, resolve=True, throw_on_missing=True))
 
 
 	for i_step in range(cfg.max_iter):
@@ -47,7 +47,7 @@ def train_lstm(cfg):
 			})
 		log_weights_gradient(model, i_step)
 		log_params_norm(model, i_step)
-		eval_lstm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, cfg.device)
+		eval_lstm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 
 		if i_step % 100 == 0:
 			n_valid = i_step / 100
@@ -89,16 +89,7 @@ def step(model, sample, target, samples_len, targets_len, loss, opt, device):
 		targets_len_copy = reduce_lens(targets_len_copy)
 		outputs.append(output)
 	
-	count_nonzero = 0
-	cumulative_loss = 0
-	loss_masks = []
-	for char_pos, output in enumerate(outputs):
-		loss_masks.append(get_mask(targets_len, device))
-		targets_len = reduce_lens(targets_len)
-		char_loss = loss(output, torch.argmax(target[:, char_pos, :].squeeze(), dim=1)) * loss_masks[-1]
-		count_nonzero += (char_loss != 0).sum()
-		cumulative_loss += torch.sum(char_loss)
-	avg_loss = cumulative_loss / count_nonzero
+	avg_loss = compute_loss(loss, outputs, target)
 	acc = batch_acc(outputs, target, get_vocab_size())
 	
 	avg_loss.backward()
@@ -134,17 +125,8 @@ def valid_step(model, sample, target, samples_len, targets_len, loss, device):
 		output = model(target[:, char_pos, :].squeeze(), hidden_mask)
 		targets_len_copy = reduce_lens(targets_len_copy)
 		outputs.append(output)
-	
-	count_nonzero = 0
-	cumulative_loss = 0
-	loss_masks = []
-	for char_pos, output in enumerate(outputs):
-		loss_masks.append(get_mask(targets_len, device))
-		targets_len = reduce_lens(targets_len)
-		char_loss = loss(output, torch.argmax(target[:, char_pos, :].squeeze(), dim=1)) * loss_masks[-1]
-		count_nonzero += (char_loss != 0).sum()
-		cumulative_loss += torch.sum(char_loss)
-	avg_loss = cumulative_loss / count_nonzero
+		
+	avg_loss = compute_loss(loss, outputs, target)
 	acc = batch_acc(outputs, target,  get_vocab_size())
 	
 	model.detach_states()

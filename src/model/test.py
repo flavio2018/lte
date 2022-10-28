@@ -1,6 +1,6 @@
 import torch
-from data.generator import get_pos2token
-from utils.rnn_utils import save_states, save_states_dntm, get_hidden_mask, get_reading_mask, reduce_lens, populate_first_output, build_first_output
+from data.generator import get_pos2token, get_vocab_size
+from utils.rnn_utils import save_states, save_states_dntm, get_hidden_mask, get_reading_mask, reduce_lens, populate_first_output, build_first_output, batch_acc
 
 
 def target_tensors_to_str(y_t):
@@ -118,8 +118,10 @@ def eval_padded(outputs, target, sample):
 	print()
 
 
-def eval_lstm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device):
+def eval_lstm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, device):
 	outputs = lstm_fwd_padded_batch(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device)
+	print(compute_loss(loss, outputs, padded_targets_batch).item())
+	print(batch_acc(outputs, padded_targets_batch, get_vocab_size()).item())
 	eval_padded(outputs, padded_targets_batch, padded_samples_batch)
 
 
@@ -130,3 +132,15 @@ def eval_dntm_padded(model, padded_samples_batch, padded_targets_batch, samples_
 def eval_encdec_padded(encoder, decoder, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device):
     outputs = encdec_fwd_padded_batch(encoder, decoder, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device)
     eval_padded(outputs, padded_targets_batch, padded_samples_batch)
+
+def compute_loss(loss, outputs, target):
+	cumulative_loss = 0
+	idx_pad = get_vocab_size() - 1
+	idx_targets = target.argmax(dim=-1)
+	mask = (idx_targets != idx_pad).type(torch.int32)
+	for char_pos, output in enumerate(outputs):
+		char_loss = loss(output, torch.argmax(target[:, char_pos, :].squeeze(), dim=1))
+		masked_char_loss = char_loss * mask[:, char_pos]
+		cumulative_loss += masked_char_loss.sum()
+	avg_loss = cumulative_loss / mask.sum()
+	return avg_loss

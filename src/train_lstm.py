@@ -37,8 +37,7 @@ def train_lstm(cfg):
 
 
 	for i_step in range(cfg.max_iter):
-		LEN, NES = torch.randint(1, cfg.max_len+1, (1,)).item(), torch.randint(1, cfg.max_nes+1, (1,)).item()
-		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(length=LEN, nesting=NES, batch_size=cfg.bs)
+		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 		loss_step, acc_step = step(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, opt, cfg.device)
 		wandb.log({
@@ -48,12 +47,12 @@ def train_lstm(cfg):
 			})
 		log_weights_gradient(model, i_step)
 		log_params_norm(model, i_step)
+		eval_lstm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, cfg.device)
 
 		if i_step % 100 == 0:
 			n_valid = i_step / 100
 			for v_step in range(10):
-				LEN, NES = torch.randint(1, cfg.max_len+1, (1,)).item(), torch.randint(1, cfg.max_nes+1, (1,)).item()
-				padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(length=LEN, nesting=NES, batch_size=cfg.bs, split='valid')
+				padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='valid')
 				padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 				loss_valid_step, acc_valid_step = valid_step(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 				wandb.log({
@@ -61,7 +60,6 @@ def train_lstm(cfg):
 					"val_acc": acc_valid_step,
 					"val_update": n_valid*10 + v_step,
 				})
-			eval_lstm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, cfg.device)
 
 
 def step(model, sample, target, samples_len, targets_len, loss, opt, device):

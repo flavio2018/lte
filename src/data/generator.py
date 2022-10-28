@@ -1,5 +1,6 @@
 from utils.rnn_utils import make_tensor, make_padded_batch
 from data.data import generate_sample
+import torch
 
 
 def get_vocab_chars():
@@ -21,11 +22,12 @@ def get_pos2token():
 	return {p: t for t, p in token2pos.items()}
 
 
-def generate_batch(length, nesting, batch_size, split='train'):
+def generate_batch(max_length, max_nesting, batch_size, split='train'):
 	vocab_size = get_vocab_size()
 	token2pos = get_token2pos()
 	
-	few_samples = [generate_sample(length=length, nesting=nesting, split=split) for i in range(batch_size)]
+	few_samples = [generate_sample(length=torch.randint(1, max_length+1, (1,)).item(),
+								   nesting=torch.randint(1, max_nesting+1, (1,)).item(), split=split) for i in range(batch_size)]
 	
 	samples_len = [len(x) for x, y in few_samples]
 	targets_len = [len(y) for x, y in few_samples]

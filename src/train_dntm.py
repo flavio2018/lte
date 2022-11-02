@@ -4,7 +4,7 @@
 from data.generator import generate_batch, get_vocab_size
 from model.dntm.DynamicNeuralTuringMachine import DynamicNeuralTuringMachine
 from model.dntm.DynamicNeuralTuringMachineMemory import DynamicNeuralTuringMachineMemory
-from model.test import eval_dntm_padded
+from model.test import eval_dntm_padded, compute_loss
 from utils.rnn_utils import get_mask, get_hidden_mask, get_reading_mask, reduce_lens, save_states_dntm, populate_first_output, build_first_output, batch_acc
 from utils.wandb_utils import log_weights_gradient, log_params_norm, log_intermediate_values_norm
 import torch
@@ -44,7 +44,7 @@ def train_dntm(cfg):
 
 
 	for i_step in range(cfg.max_iter):
-		batched_samples, batched_targets, samples_len, targets_len = generate_batch(length=cfg.max_len, nesting=cfg.max_nes, batch_size=cfg.bs)
+		batched_samples, batched_targets, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs)
 		batched_samples, batched_targets = batched_samples.to(cfg.device), batched_targets.to(cfg.device)
 		loss_step, acc_step = step(model, batched_samples, batched_targets, samples_len, targets_len, loss, opt, cfg.device)
 		wandb.log({
@@ -55,11 +55,12 @@ def train_dntm(cfg):
 		log_weights_gradient(model, i_step)
 		log_params_norm(model, i_step)
 		log_intermediate_values_norm(model, i_step)
+		eval_dntm_padded(model, batched_samples, batched_targets, samples_len, targets_len, loss, cfg.device)
 
 		if i_step % 100 == 0:
 			n_valid = i_step / 100
 			for v_step in range(10):
-				padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(length=cfg.max_len, nesting=cfg.max_nes, batch_size=cfg.bs, split='valid')
+				padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='valid')
 				padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 				loss_valid_step, acc_valid_step = valid_step(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 				wandb.log({
@@ -67,7 +68,6 @@ def train_dntm(cfg):
 					"val_acc": acc_valid_step,
 					"val_update": n_valid*10 + v_step,
 				})
-			eval_dntm_padded(model, padded_samples_batch, padded_targets_batch, samples_len, targets_len, cfg.device)
 
 
 def step(model, sample, target, samples_len, targets_len, loss, opt, device):
@@ -103,16 +103,7 @@ def step(model, sample, target, samples_len, targets_len, loss, opt, device):
 		targets_len_copy = reduce_lens(targets_len_copy)
 		outputs.append(output)
 
-	count_nonzero = 0
-	cumulative_loss = 0
-	loss_masks = []
-	for char_pos, output in enumerate(outputs):
-		loss_masks.append(get_mask(targets_len, device))
-		targets_len = reduce_lens(targets_len)
-		char_loss = loss(output.squeeze(), torch.argmax(target[:, char_pos, :].squeeze(), dim=1)) * loss_masks[-1]
-		count_nonzero += (char_loss != 0).sum()
-		cumulative_loss += torch.sum(char_loss)
-	avg_loss = cumulative_loss / count_nonzero
+	avg_loss = compute_loss(loss, outputs, target)
 	acc = batch_acc(outputs, target, get_vocab_size())
 
 	avg_loss.backward()
@@ -154,16 +145,7 @@ def valid_step(model, sample, target, samples_len, targets_len, loss, device):
 		targets_len_copy = reduce_lens(targets_len_copy)
 		outputs.append(output)
 
-	count_nonzero = 0
-	cumulative_loss = 0
-	loss_masks = []
-	for char_pos, output in enumerate(outputs):
-		loss_masks.append(get_mask(targets_len, device))
-		targets_len = reduce_lens(targets_len)
-		char_loss = loss(output.squeeze(), torch.argmax(target[:, char_pos, :].squeeze(), dim=1)) * loss_masks[-1]
-		count_nonzero += (char_loss != 0).sum()
-		cumulative_loss += torch.sum(char_loss)
-	avg_loss = cumulative_loss / count_nonzero
+	avg_loss = compute_loss(loss, outputs, target)
 	acc = batch_acc(outputs, target,  get_vocab_size())
 
 	return avg_loss.item(), acc.item()

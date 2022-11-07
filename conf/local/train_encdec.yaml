@@ -9,9 +9,10 @@ hydra:
 
 codename: encdec
 max_iter: 10000
-bs: 64
+bs: 128
 lr: 3e-4
 max_len: 4
 max_nes: 1
 hid_size: 400
 device: 'cuda'
+ops: 'asmif'

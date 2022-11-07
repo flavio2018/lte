@@ -1,8 +1,8 @@
 """Train encoder-decoder models on LTE task."""
 
 from model.lstm import LSTM, DeepLSTM
-from model.test import eval_encdec_padded, compute_loss
-from data.generator import get_vocab_size, generate_batch
+from model.test import eval_encdec_padded, compute_loss, encdec_step
+from data.generator import get_vocab_size, get_target_vocab_size, generate_batch
 from utils.rnn_utils import get_mask, get_hidden_mask, reduce_lens, save_states, populate_first_output, build_first_output, batch_acc
 from utils.wandb_utils import log_weights_gradient, log_params_norm
 import torch
@@ -23,9 +23,9 @@ def train_encdec(cfg):
 	).to(cfg.device)
 
 	decoder = DeepLSTM(
-		input_size=get_vocab_size(),
+		input_size=get_target_vocab_size(),
 		hidden_size=cfg.hid_size,
-		output_size=get_vocab_size(),
+		output_size=get_target_vocab_size(),
 		batch_size=cfg.bs,
 	).to(cfg.device)
 
@@ -47,7 +47,7 @@ def train_encdec(cfg):
 	for i_step in range(cfg.max_iter):
 		#LEN, NES = torch.randint(1, cfg.max_len+1, (1,)).item(), torch.randint(1, cfg.max_nes+1, (1,)).item()
 		LEN, NES = cfg.max_len, cfg.max_nes
-		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs)
+		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, ops=cfg.ops)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 		loss_step, acc_step = train_step(encoder, decoder, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, opt, cfg.device)
 		wandb.log({
@@ -66,7 +66,7 @@ def train_encdec(cfg):
 			for v_step in range(10):
 				#LEN, NES = torch.randint(1, cfg.max_len+1, (1,)).item(), torch.randint(1, cfg.max_nes+1, (1,)).item()
 				LEN, NES = cfg.max_len, cfg.max_nes
-				padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, split='valid')
+				padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, split='valid', ops=cfg.ops)
 				padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 				loss_valid_step, acc_valid_step = valid_step(encoder, decoder, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 				wandb.log({
@@ -80,34 +80,11 @@ def train_step(encoder, decoder, sample, target, samples_len, targets_len, loss,
 	opt.zero_grad()
 	encoder.train()
 	decoder.train()
-	outputs = []
-	h_dict, c_dict = {1: {}, 2: {}}, {1: {}, 2: {}}
-	samples_len = samples_len.copy()
-	targets_len = targets_len.copy()
-	hid_size = encoder.h_t_1.size(1)
-	
-	for char_pos in range(sample.size(1)):
-		hidden_mask = get_hidden_mask(samples_len, hid_size, device)
-		output = encoder(sample[:, char_pos, :].squeeze(), hidden_mask)
-		samples_len = reduce_lens(samples_len)
-		h_dict, c_dict = save_states(encoder, h_dict, c_dict, samples_len)
-	
-	decoder.set_states(h_dict, c_dict)
-	output = decoder(torch.ones(sample[:, char_pos, :].squeeze().size(), device=device),
-					 torch.ones(hidden_mask.size(), device=device))
-	outputs.append(output)
-	targets_len_copy = targets_len.copy()
-	targets_len_copy = reduce_lens(targets_len_copy)
-				
-	for char_pos in range(target.size(1) - 1):
-		hidden_mask = get_hidden_mask(targets_len_copy, hid_size, device)
-		output = decoder(target[:, char_pos, :].squeeze(), hidden_mask)
-		targets_len_copy = reduce_lens(targets_len_copy)
-		outputs.append(output)
-		
-	avg_loss = compute_loss(loss, outputs, target)
-	acc = batch_acc(outputs, target, get_vocab_size())
-	
+
+	outputs = encdec_step(encoder, decoder, sample, target, samples_len, targets_len, device)
+	avg_loss = compute_loss(loss, outputs, target[:, 1:, :])
+	acc = batch_acc(outputs, target[:, 1:, :], get_target_vocab_size())  # cut SOS
+
 	avg_loss.backward()
 	opt.step()
 
@@ -120,33 +97,10 @@ def train_step(encoder, decoder, sample, target, samples_len, targets_len, loss,
 def valid_step(encoder, decoder, sample, target, samples_len, targets_len, loss, device):
 	encoder.eval()
 	decoder.eval()
-	outputs = []
-	h_dict, c_dict = {1: {}, 2: {}}, {1: {}, 2: {}}
-	samples_len = samples_len.copy()
-	targets_len = targets_len.copy()
-	hid_size = encoder.h_t_1.size(1)
-	
-	for char_pos in range(sample.size(1)):
-		hidden_mask = get_hidden_mask(samples_len, hid_size, device)
-		output = encoder(sample[:, char_pos, :].squeeze(), hidden_mask)
-		samples_len = reduce_lens(samples_len)
-		h_dict, c_dict = save_states(encoder, h_dict, c_dict, samples_len)
-	
-	decoder.set_states(h_dict, c_dict)
-	output = decoder(torch.ones(sample[:, char_pos, :].squeeze().size(), device=device),
-					 torch.ones(hidden_mask.size(), device=device))
-	outputs.append(output)
-	targets_len_copy = targets_len.copy()
-	targets_len_copy = reduce_lens(targets_len_copy)
-				
-	for char_pos in range(target.size(1) - 1):
-		hidden_mask = get_hidden_mask(targets_len_copy, hid_size, device)
-		output = decoder(target[:, char_pos, :].squeeze(), hidden_mask)
-		targets_len_copy = reduce_lens(targets_len_copy)
-		outputs.append(output)
-		
-	avg_loss = compute_loss(loss, outputs, target)
-	acc = batch_acc(outputs, target, get_vocab_size())
+
+	outputs = encdec_step(encoder, decoder, sample, target, samples_len, targets_len, device)
+	avg_loss = compute_loss(loss, outputs, target[:, 1:, :])
+	acc = batch_acc(outputs, target[:, 1:, :], get_target_vocab_size())
 	
 	encoder.detach_states()
 	decoder.detach_states()

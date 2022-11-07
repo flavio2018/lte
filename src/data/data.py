@@ -113,18 +113,25 @@ class ForLoop:
         return self.accumulator_code, valueless_code
 
 
-def generate_sample(length, nesting, split='train'):
+def generate_sample(length, nesting, split='train', ops='asmif'):
     program_split = ''
     
     while(program_split != split):
         used_letters = list("abcdefghjklmnopqrstuvwxyz")
         stack = []
-        ops = [Addition(), Subtraction(), Multiplication(), Assignment(used_letters),
-               IfStatement(), ForLoop(used_letters, length)]
+        ops_dict = {
+            "a": Addition(),
+            "s": Subtraction(),
+            "m": Multiplication(),
+            "i": IfStatement(),
+            "f": ForLoop(used_letters, length),
+        }
+        # ops = [Addition(), Subtraction(), Multiplication()] #, Assignment(used_letters), IfStatement(), ForLoop(used_letters, length)]
+        ops_subset = [v for k, v in ops_dict.items() if k in ops]
         program = ''
         
         for i in range(nesting):
-            op = ops[np.random.randint(len(ops))]
+            op = ops_subset[np.random.randint(len(ops_subset))]
             values = []
             codes = []
 

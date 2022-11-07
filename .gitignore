@@ -1,4 +1,5 @@
 /data/
+/multirun/
 /hydra/
 /models/checkpoints/
 /slurm/
@@ -7,3 +8,4 @@ wandb/
 __pycache__/
 src.egg-info/
 .ipynb_checkpoints/
+loss_fn_deepmind.py

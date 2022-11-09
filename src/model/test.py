@@ -128,7 +128,10 @@ def encdec_step(encoder, decoder, sample, target, samples_len, targets_len, devi
 	targets_len_copy = targets_len.copy()
 	for char_pos in range(target.size(1) - 1):
 		hidden_mask = get_hidden_mask(targets_len_copy, hid_size, device)
-		output = decoder(target[:, char_pos, :].squeeze(), hidden_mask)
+		if outputs:
+			output = decoder(outputs[-1], hidden_mask)  # no teacher forcing
+		else:
+			output = decoder(target[:, char_pos, :].squeeze(), hidden_mask)
 		targets_len_copy = reduce_lens(targets_len_copy)
 		outputs.append(output)
 	return outputs

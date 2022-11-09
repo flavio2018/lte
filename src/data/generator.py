@@ -3,8 +3,13 @@ from data.data import generate_sample
 import torch
 
 
+_EOS = '.'
+_SOS = '?'
+_PAD = '#'
+
+
 def get_vocab_chars():
-	return set('abcdefghijklmnopqrstuvwxyz0123456789()+*-=<>: ')
+	return set('abcdefghijklmnopqrstuvwxyz0123456789()%+*-=<>: ')
 
 
 def get_target_vocab_chars():
@@ -22,15 +27,15 @@ def get_target_vocab_size():
 def get_token2pos():
 	token2pos = {t: p for p, t in enumerate(get_vocab_chars())}
 	token2pos['\n'] = len(token2pos)
-	token2pos['#'] = len(token2pos)  # padding
+	token2pos[_PAD] = len(token2pos)  # padding
 	return token2pos
 
 
 def get_target_token2pos():
     token2pos = {t: p for p, t in enumerate(get_target_vocab_chars())}
-    token2pos['sos'] = len(token2pos)  # start of string
-    token2pos['eos'] = len(token2pos)  # end of string
-    token2pos['#'] = len(token2pos)    # padding
+    token2pos[_SOS] = len(token2pos)  # start of string
+    token2pos[_EOS] = len(token2pos)  # end of string
+    token2pos[_PAD] = len(token2pos)  # padding
     return token2pos
 
 

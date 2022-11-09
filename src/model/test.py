@@ -110,7 +110,7 @@ def encdec_fwd_padded_batch(encoder, decoder, sample, target, samples_len, targe
 	return outputs
 
 
-def encdec_step(encoder, decoder, sample, target, samples_len, targets_len, device):
+def encdec_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, device):
 	outputs = []
 	h_dict, c_dict = {1: {}, 2: {}}, {1: {}, 2: {}}
 	samples_len = samples_len.copy()
@@ -134,6 +134,7 @@ def encdec_step(encoder, decoder, sample, target, samples_len, targets_len, devi
 			output = decoder(target[:, char_pos, :].squeeze(), hidden_mask)
 		targets_len_copy = reduce_lens(targets_len_copy)
 		outputs.append(output)
+	outputs = [final_mlp(o) for o in outputs]
 	return outputs
 
 
@@ -164,9 +165,9 @@ def eval_dntm_padded(model, padded_samples_batch, padded_targets_batch, samples_
 	print(batch_acc(outputs, padded_targets_batch, get_vocab_size()).item())
 	eval_padded(outputs, padded_targets_batch, padded_samples_batch)
 
-def eval_encdec_padded(encoder, decoder, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, device):
+def eval_encdec_padded(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, device):
     with torch.no_grad():
-        outputs = encdec_step(encoder, decoder, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device)
+        outputs = encdec_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device)
     encoder.detach_states()
     decoder.detach_states()
     print(compute_loss(loss, outputs, padded_targets_batch[:, 1:, :]).item())

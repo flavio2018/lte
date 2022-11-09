@@ -5,6 +5,8 @@ from model.test import eval_encdec_padded, compute_loss, encdec_step
 from data.generator import get_vocab_size, get_target_vocab_size, generate_batch
 from utils.rnn_utils import get_mask, get_hidden_mask, reduce_lens, save_states, populate_first_output, build_first_output, batch_acc
 from utils.wandb_utils import log_weights_gradient, log_params_norm
+import collections
+import numpy as np
 import torch
 import wandb
 import hydra
@@ -33,6 +35,8 @@ def train_encdec(cfg):
 
 	loss = torch.nn.CrossEntropyLoss(reduction='none')
 	opt = torch.optim.Adam(enc_dec_parameters, lr=cfg.lr)
+	lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=0.9)
+	FREQ_LR_DECAY = cfg.max_iter // 100
 
 	wandb.init(
 		project="lte",
@@ -43,14 +47,16 @@ def train_encdec(cfg):
 	wandb.run.name = cfg.codename
 	wandb.config.update(omegaconf.OmegaConf.to_container(
 		cfg, resolve=True, throw_on_missing=True))
+	
+	losses = collections.deque([], maxlen=10)	
+	LEN, NES, losses = get_len_nes(1, 1, losses, cfg)
 
 	for i_step in range(cfg.max_iter):
-		#LEN, NES = torch.randint(1, cfg.max_len+1, (1,)).item(), torch.randint(1, cfg.max_nes+1, (1,)).item()
-		LEN, NES = cfg.max_len, cfg.max_nes
 		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, ops=cfg.ops)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 		loss_step, acc_step = train_step(encoder, decoder, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, opt, cfg.device)
 		wandb.log({
+				"lr": lr_scheduler.get_last_lr()[-1],
 				"loss": loss_step,
 				"acc": acc_step,
 				"update": i_step,
@@ -61,19 +67,19 @@ def train_encdec(cfg):
 		log_params_norm(decoder, i_step)
 		eval_encdec_padded(encoder, decoder, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 
-		if i_step % 100 == 0:
-			n_valid = i_step / 100
-			for v_step in range(10):
-				#LEN, NES = torch.randint(1, cfg.max_len+1, (1,)).item(), torch.randint(1, cfg.max_nes+1, (1,)).item()
-				LEN, NES = cfg.max_len, cfg.max_nes
-				padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, split='valid', ops=cfg.ops)
-				padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
-				loss_valid_step, acc_valid_step = valid_step(encoder, decoder, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
-				wandb.log({
-					"val_loss": loss_valid_step,
-					"val_acc": acc_valid_step,
-					"val_update": n_valid*10 + v_step,
-				})
+		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, split='valid', ops=cfg.ops)
+		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
+		loss_valid_step, acc_valid_step = valid_step(encoder, decoder, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
+		losses.append(loss_valid_step)
+		LEN, NES, losses = get_len_nes(LEN, NES, losses, cfg)
+		wandb.log({
+			"val_loss": loss_valid_step,
+			"val_acc": acc_valid_step,
+			"update": i_step,
+		})
+
+		if (i_step % FREQ_LR_DECAY == 0) and (lr_scheduler.get_last_lr()[-1] > 8e-5):
+			lr_scheduler.step()
 
 
 def train_step(encoder, decoder, sample, target, samples_len, targets_len, loss, opt, device):
@@ -105,6 +111,28 @@ def valid_step(encoder, decoder, sample, target, samples_len, targets_len, loss,
 	encoder.detach_states()
 	decoder.detach_states()
 	return avg_loss.item(), acc.item()
+
+
+def increase_len_nes(losses):
+	if len(losses) < 10:
+		return False
+
+	# Average change in loss normalized by average loss.
+	loss_diffs = [pair[0] - pair[1]
+				  for pair in zip(list(losses)[1:],
+								  list(losses)[:-1])]
+	avg_loss_norm = np.mean(loss_diffs) / np.mean(losses)
+	if avg_loss_norm < 0.05:
+		return True
+	return False
+
+
+def get_len_nes(cur_len, cur_nes, losses, cfg):
+	if increase_len_nes(losses):
+		losses = collections.deque([], maxlen=10)
+		if cur_len < cfg.max_len and cur_nes < cfg.max_nes:
+			return cur_len+1, cur_nes+1, losses
+	return cur_len, cur_nes, losses
 
 
 if __name__ == '__main__':

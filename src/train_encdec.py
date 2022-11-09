@@ -14,6 +14,10 @@ import hydra
 import omegaconf
 
 
+LOSS_WIN_SIZE = 10
+FREQ_EVAL = 10
+
+
 @hydra.main(config_path="../conf/local", config_name="train_encdec")
 def train_encdec(cfg):
 	print(omegaconf.OmegaConf.to_yaml(cfg))
@@ -79,9 +83,10 @@ def train_encdec(cfg):
 
 		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, split='valid', ops=cfg.ops)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
-		loss_valid_step, acc_valid_step = valid_step(encoder, decoder, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
-		losses.append(loss_valid_step)
-		LEN, NES, losses = get_len_nes(LEN, NES, losses, cfg)
+		loss_valid_step, acc_valid_step = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
+		if i_step % 200 == 0:
+			losses.append(loss_valid_step)
+			LEN, NES, losses = get_len_nes(LEN, NES, losses, cfg)
 		wandb.log({
 			"val_loss": loss_valid_step,
 			"val_acc": acc_valid_step,
@@ -90,6 +95,16 @@ def train_encdec(cfg):
 
 		if (i_step % FREQ_LR_DECAY == 0) and (lr_scheduler.get_last_lr()[-1] > 8e-5):
 			lr_scheduler.step()
+		
+		if i_step % FREQ_EVAL == 0:
+			padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='test', ops=cfg.ops)
+			padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
+			_, acc_test = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
+			wandb.log({
+				"acc_test": acc_test,
+				"test_update": i_step // FREQ_EVAL,
+			})
+		
 
 
 def train_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, loss, opt, device):
@@ -124,7 +139,7 @@ def valid_step(encoder, decoder, final_mlp, sample, target, samples_len, targets
 
 
 def increase_len_nes(losses):
-	if len(losses) < 10:
+	if len(losses) < LOSS_WIN_SIZE:
 		return False
 
 	# Average change in loss normalized by average loss.
@@ -139,8 +154,9 @@ def increase_len_nes(losses):
 
 def get_len_nes(cur_len, cur_nes, losses, cfg):
 	if increase_len_nes(losses):
-		losses = collections.deque([], maxlen=10)
+		losses = collections.deque([], maxlen=LOSS_WIN_SIZE)
 		if cur_len < cfg.max_len and cur_nes < cfg.max_nes:
+			print(f"Increased len to {cur_len+1}, nes to {cur_nes+1}")
 			return cur_len+1, cur_nes+1, losses
 	return cur_len, cur_nes, losses
 

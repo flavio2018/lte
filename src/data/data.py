@@ -136,13 +136,13 @@ def generate_sample(length, nesting, split='train', ops='asmif'):
             codes = []
 
             for param in range(op.operands):
-                if not len(stack) == 0 and np.random.rand() > 0.5:
+                if stack:
                     value, code = stack.pop()
                 else:
                     if isinstance(op, Multiplication) and param == 0:  # for the first parameter of multiplication
-                        value = np.random.randint(4*length)
+                        value = np.random.randint(4*(length-1), 4*length)
                     else:
-                        value = np.random.randint(10**length)
+                        value = np.random.randint(10**(length-1), 10**length)
                     code = str(value)
                 values.append(value)
                 codes.append(code)
@@ -154,7 +154,8 @@ def generate_sample(length, nesting, split='train', ops='asmif'):
                 new_code = op.generate_code(codes)
             stack.append((new_value, new_code))
         final_value, final_code = stack.pop()
-        program += "print(" + final_code + ")"
+        final_value = final_value % 10**(length+1)
+        program += "print(" + final_code + " % 10**length)"
 
         program_hash = hash(program)
         if program_hash % 3 == 0:

@@ -154,8 +154,7 @@ def generate_sample(length, nesting, split='train', ops='asmif'):
                 new_code = op.generate_code(codes)
             stack.append((new_value, new_code))
         final_value, final_code = stack.pop()
-        final_value = final_value % 10**(length+1)
-        program += "print(" + final_code + " % 10**length)"
+        program += "print(" + final_code + ")"
 
         program_hash = hash(program)
         if program_hash % 3 == 0:

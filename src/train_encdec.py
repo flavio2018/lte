@@ -16,6 +16,7 @@ import omegaconf
 
 LOSS_WIN_SIZE = 10
 FREQ_EVAL = 10
+FREQ_LOSS_RECORDING = 100001
 
 
 @hydra.main(config_path="../conf/local", config_name="train_encdec")
@@ -61,7 +62,8 @@ def train_encdec(cfg):
 		cfg, resolve=True, throw_on_missing=True))
 	
 	losses = collections.deque([], maxlen=LOSS_WIN_SIZE)	
-	LEN, NES, losses = get_len_nes(1, 1, losses, cfg)
+	# LEN, NES, losses = get_len_nes(1, 1, losses, cfg)
+	LEN, NES = cfg.max_len, cfg.max_nes
 
 	for i_step in range(cfg.max_iter):
 		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, ops=cfg.ops)
@@ -84,7 +86,7 @@ def train_encdec(cfg):
 		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, split='valid', ops=cfg.ops)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 		loss_valid_step, acc_valid_step = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
-		if i_step % 200 == 0:
+		if i_step % FREQ_LOSS_RECORDING == 0:
 			losses.append(loss_valid_step)
 			LEN, NES, losses = get_len_nes(LEN, NES, losses, cfg)
 		wandb.log({

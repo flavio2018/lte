@@ -49,7 +49,7 @@ def get_target_pos2token():
     return {p: t for t, p in token2pos.items()}
 
 
-def generate_batch(max_length, max_nesting, batch_size, split='train', ops='asmif'):
+def generate_batch(max_length, max_nesting, batch_size, split='train', ops='asmif', mod=3):
 	vocab_size = get_vocab_size()
 	token2pos = get_token2pos()
 	target_vocab_size = get_target_vocab_size()
@@ -57,9 +57,9 @@ def generate_batch(max_length, max_nesting, batch_size, split='train', ops='asmi
 	
 	if split != 'test':
 		few_samples = [generate_sample(length=torch.randint(1, max_length+1, (1,)).item(),
-								   nesting=torch.randint(1, max_nesting+1, (1,)).item(), split=split, ops=ops) for i in range(batch_size)]
+								   nesting=torch.randint(1, max_nesting+1, (1,)).item(), split=split, ops=ops, mod=mod) for i in range(batch_size)]
 	else:
-		few_samples = [generate_sample(length=max_length, nesting=max_nesting, split=split, ops=ops) for i in range(batch_size)]
+		few_samples = [generate_sample(length=max_length, nesting=max_nesting, split=split, ops=ops, mod=mod) for i in range(batch_size)]
 
 	samples_len = [len(x) for x, y in few_samples]
 	targets_len = [len(y) + 1 for x, y in few_samples]  # targets start with sos

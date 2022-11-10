@@ -66,7 +66,7 @@ def train_encdec(cfg):
 	LEN, NES = cfg.max_len, cfg.max_nes
 
 	for i_step in range(cfg.max_iter):
-		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, ops=cfg.ops)
+		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, ops=cfg.ops, mod=cfg.mod)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 		loss_step, acc_step = train_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, opt, cfg.device)
 		wandb.log({
@@ -83,7 +83,7 @@ def train_encdec(cfg):
 		log_params_norm(final_mlp, i_step)
 		eval_encdec_padded(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 
-		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, split='valid', ops=cfg.ops)
+		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, split='valid', ops=cfg.ops, mod=cfg.mod)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 		loss_valid_step, acc_valid_step = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 		if i_step % FREQ_LOSS_RECORDING == 0:
@@ -99,7 +99,7 @@ def train_encdec(cfg):
 			lr_scheduler.step()
 		
 		if i_step % FREQ_EVAL == 0:
-			padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='test', ops=cfg.ops)
+			padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='test', ops=cfg.ops, mod=cfg.mod)
 			padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 			_, acc_test = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 			wandb.log({

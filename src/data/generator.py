@@ -54,6 +54,7 @@ def generate_batch(max_length, max_nesting, batch_size, split='train', ops='asmi
 	token2pos = get_token2pos()
 	target_vocab_size = get_target_vocab_size()
 	target_token2pos = get_target_token2pos()
+	max_len_in, max_len_out = get_max_lens(max_length, max_nesting)
 	
 	if split != 'test':
 		few_samples = [generate_sample(length=torch.randint(1, max_length+1, (1,)).item(),
@@ -67,7 +68,17 @@ def generate_batch(max_length, max_nesting, batch_size, split='train', ops='asmi
 	tensor_samples = [make_tensor(x, token2pos, vocab_size) for x, y in few_samples]
 	tensor_targets = [make_target_tensor(y, target_token2pos, target_vocab_size) for x, y in few_samples]
 
-	padded_batch_samples = make_padded_batch(tensor_samples, samples_len, vocab_size)
-	padded_batch_targets = make_padded_batch(tensor_targets, targets_len, target_vocab_size)
+	padded_batch_samples = make_padded_batch(tensor_samples, samples_len, vocab_size, max_len_in)
+	padded_batch_targets = make_padded_batch(tensor_targets, targets_len, target_vocab_size, max_len_out)
 
 	return padded_batch_samples, padded_batch_targets, samples_len, targets_len
+
+
+def get_max_lens(max_length, max_nesting):
+	outer_nests_term = (max_length * 3 + 10) * (max_nesting - 1)
+    inner_nest_term = max_length * 4 + 10
+    nest_tok_term = (max_nesting - 1) * 2
+    _num_steps_out = max_length * 2
+	_num_steps = outer_nests_term + inner_nest_term + nest_tok_term
+	# num_steps = max(_num_steps, _num_steps_out)    
+	return _num_steps, _num_steps_out

@@ -77,7 +77,7 @@ class IfStatement:
     def generate_code(self, codes):
         code_op1, code_op2, code_res1, code_res2 = codes
         op = ">" if self.geq else "<"
-        return "(" + code_res1 + " if " + code_op1 + op + code_op2 + " else " + code_res2 + ")"
+        return "(" + code_res1 + "if" + code_op1 + op + code_op2 + "else" + code_res2 + ")"
 
 
 class ForLoop:

@@ -3,7 +3,7 @@
 from model.lstm import LSTM, DeepLSTM
 from model.mlp import MLP
 from model.test import eval_encdec_padded, compute_loss, encdec_step
-from data.generator import get_vocab_size, get_target_vocab_size, generate_batch
+from data.generator import get_vocab_size, get_target_vocab_size, generate_batch, SubsetDataset
 from utils.rnn_utils import get_mask, get_hidden_mask, reduce_lens, save_states, populate_first_output, build_first_output, batch_acc
 from utils.wandb_utils import log_weights_gradient, log_params_norm
 import collections
@@ -63,10 +63,14 @@ def train_encdec(cfg):
 	
 	losses = collections.deque([], maxlen=LOSS_WIN_SIZE)	
 	# LEN, NES, losses = get_len_nes(1, 1, losses, cfg)
-	LEN, NES = cfg.max_len, cfg.max_nes
+	if cfg.cl_mix:
+		LEN, NES = cfg.max_len, cfg.max_nes
+	else:
+		LEN, NES = 1, 1
+	subset_dataset = SubsetDataset(max_len=cfg.max_len, max_nes=cfg.max_nes, ops=cfg.ops)
 
 	for i_step in range(cfg.max_iter):
-		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, ops=cfg.ops, mod=cfg.mod)
+		padded_samples_batch, padded_targets_batch, samples_len, targets_len = subset_dataset.generate_batch(LEN, NES, cfg.bs, ops=cfg.ops, mod=cfg.mod)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 		loss_step, acc_step = train_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, opt, cfg.device)
 		wandb.log({
@@ -81,14 +85,19 @@ def train_encdec(cfg):
 		#log_params_norm(encoder, i_step)
 		log_params_norm(decoder, i_step)
 		log_params_norm(final_mlp, i_step)
-		eval_encdec_padded(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
+		if i_step % 100 == 0:
+			eval_encdec_padded(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 
-		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, split='valid', ops=cfg.ops, mod=cfg.mod)
+		padded_samples_batch, padded_targets_batch, samples_len, targets_len = subset_dataset.generate_batch(LEN, NES, cfg.bs, split='valid', ops=cfg.ops, mod=cfg.mod)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 		loss_valid_step, acc_valid_step = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 		if i_step % FREQ_LOSS_RECORDING == 0:
 			losses.append(loss_valid_step)
 			LEN, NES, losses = get_len_nes(LEN, NES, losses, cfg)
+
+		if acc_valid_step >= 0.9 and not cfg.cl_mix:
+			LEN += 1
+
 		wandb.log({
 			"val_loss": loss_valid_step,
 			"val_acc": acc_valid_step,
@@ -99,7 +108,7 @@ def train_encdec(cfg):
 			lr_scheduler.step()
 		
 		if i_step % FREQ_EVAL == 0:
-			padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='test', ops=cfg.ops, mod=cfg.mod)
+			padded_samples_batch, padded_targets_batch, samples_len, targets_len = subset_dataset.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='test', ops=cfg.ops, mod=cfg.mod)
 			padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 			_, acc_test = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 			wandb.log({

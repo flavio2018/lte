@@ -1,6 +1,9 @@
 from utils.rnn_utils import make_tensor, make_target_tensor, make_padded_batch
 from data.data import generate_sample
 import torch
+from itertools import product
+import pickle
+import random
 
 
 _EOS = '.'
@@ -82,3 +85,49 @@ def get_max_lens(max_length, max_nesting):
 	_num_steps = outer_nests_term + inner_nest_term + nest_tok_term
 	# num_steps = max(_num_steps, _num_steps_out)    
 	return _num_steps, _num_steps_out
+
+
+class SubsetDataset:
+	def __init__(self, max_len, max_nes, ops):
+		self.max_len = max_len
+		self.max_nes = max_nes
+		self.ops = ops
+		self.subsets = {}
+		self._load_subsets()
+
+	def _load_subsets(self):
+		print("Loading subsets...")
+		for l, n in product(range(1, self.max_len+1), range(1, self.max_nes+1)):
+			for split in ['train', 'valid', 'test']:
+			    with open(f'/home/fpetruzzellis/Progetti/lte/data/subsets/{self.ops}_len{l}_nes{n}_{split}.pickle', 'rb') as f:
+			        self.subsets[f"len{l}nes{n}_{split}"] = pickle.load(f)
+		print("Subsets loaded.")
+
+	def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', mod=3):
+		vocab_size = get_vocab_size()
+		token2pos = get_token2pos()
+		target_vocab_size = get_target_vocab_size()
+		target_token2pos = get_target_token2pos()
+		
+		if split != 'test':
+			few_samples = [self.generate_sample(length=torch.randint(1, max_length+1, (1,)).item(),
+			 						   			nesting=torch.randint(1, max_nesting+1, (1,)).item(),
+			 						   			split=split, ops=ops, mod=mod) for i in range(batch_size)]
+		else:
+			few_samples = [self.generate_sample(length=max_length,
+												nesting=max_nesting,
+												split=split, ops=ops, mod=mod) for i in range(batch_size)]
+
+		samples_len = [len(x) for x, y in few_samples]
+		targets_len = [len(y) + 1 for x, y in few_samples]  # targets start with sos
+
+		tensor_samples = [make_tensor(x, token2pos, vocab_size) for x, y in few_samples]
+		tensor_targets = [make_target_tensor(y, target_token2pos, target_vocab_size) for x, y in few_samples]
+
+		padded_batch_samples = make_padded_batch(tensor_samples, samples_len, vocab_size, max(samples_len))
+		padded_batch_targets = make_padded_batch(tensor_targets, targets_len, target_vocab_size, max(targets_len))
+
+		return padded_batch_samples, padded_batch_targets, samples_len, targets_len
+
+	def generate_sample(self, length, nesting, split='train', ops='a', mod=3):
+		return random.sample(self.subsets[f"len{length}nes{nesting}_{split}"], 1)[0]  # sample returns a list

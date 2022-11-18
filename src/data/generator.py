@@ -101,7 +101,7 @@ class SubsetDataset:
 		for l, n in product(range(1, self.max_len+1), range(1, self.max_nes+1)):
 			for split in ['train', 'valid', 'test']:
 			    with open(f'/home/fpetruzzellis/Progetti/lte/data/subsets/{self.ops}_len{l}_nes{n}_{split}.pickle', 'rb') as f:
-			        self.subsets[f"len{l}nes{n}_{split}"] = pickle.load(f)
+			        self.subsets[f"len{l}nes{n}_{split}"] = list(pickle.load(f))
 		print("Subsets loaded.")
 
 	def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', mod=3):
@@ -131,4 +131,4 @@ class SubsetDataset:
 		return padded_batch_samples, padded_batch_targets, samples_len, targets_len
 
 	def generate_sample(self, length, nesting, split='train', ops='a', mod=3):
-		return random.sample(self.subsets[f"len{length}nes{nesting}_{split}"], 1)[0]  # sample returns a list
+		return random.choice(self.subsets[f"len{length}nes{nesting}_{split}"])

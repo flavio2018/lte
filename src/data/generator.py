@@ -16,7 +16,7 @@ def get_vocab_chars():
 
 
 def get_target_vocab_chars():
-    return set('0123456789-')
+	return set('0123456789-') 
 
 
 def get_vocab_size():
@@ -24,7 +24,7 @@ def get_vocab_size():
 
 
 def get_target_vocab_size():
-    return len(get_target_vocab_chars()) + 3  # sos eos pad
+	return len(get_target_vocab_chars()) + 3  # sos eos pad
 
 
 def get_token2pos():
@@ -35,11 +35,11 @@ def get_token2pos():
 
 
 def get_target_token2pos():
-    token2pos = {t: p for p, t in enumerate(get_target_vocab_chars())}
-    token2pos[_SOS] = len(token2pos)  # start of string
-    token2pos[_EOS] = len(token2pos)  # end of string
-    token2pos[_PAD] = len(token2pos)  # padding
-    return token2pos
+	token2pos = {t: p for p, t in enumerate(get_target_vocab_chars())}
+	token2pos[_SOS] = len(token2pos)  # start of string
+	token2pos[_EOS] = len(token2pos)  # end of string
+	token2pos[_PAD] = len(token2pos)  # padding
+	return token2pos
 
 
 def get_pos2token():
@@ -48,8 +48,8 @@ def get_pos2token():
 
 
 def get_target_pos2token():
-    token2pos = get_target_token2pos()
-    return {p: t for t, p in token2pos.items()}
+	token2pos = get_target_token2pos()
+	return {p: t for t, p in token2pos.items()}
 
 
 def generate_batch(max_length, max_nesting, batch_size, split='train', ops='asmif', mod=3):
@@ -71,17 +71,18 @@ def generate_batch(max_length, max_nesting, batch_size, split='train', ops='asmi
 	tensor_samples = [make_tensor(x, token2pos, vocab_size) for x, y in few_samples]
 	tensor_targets = [make_target_tensor(y, target_token2pos, target_vocab_size) for x, y in few_samples]
 
-	padded_batch_samples = make_padded_batch(tensor_samples, samples_len, vocab_size, max_len_in)
-	padded_batch_targets = make_padded_batch(tensor_targets, targets_len, target_vocab_size, max_len_out)
+	padded_batch_samples = make_padded_batch(tensor_samples, samples_len, vocab_size, max(samples_len))
+	padded_batch_targets = make_padded_batch(tensor_targets, targets_len, target_vocab_size, max(targets_len))
 
 	return padded_batch_samples, padded_batch_targets, samples_len, targets_len
 
 
 def get_max_lens(max_length, max_nesting):
+	# return max_length * 2 + 3, max_length + 2
 	outer_nests_term = (max_length * 3 + 10) * (max_nesting - 1)
-    inner_nest_term = max_length * 4 + 10
-    nest_tok_term = (max_nesting - 1) * 2
-    _num_steps_out = max_length * 2
+	inner_nest_term = max_length * 4 + 10
+	nest_tok_term = (max_nesting - 1) * 2
+	_num_steps_out = max_length * 2 + 1  # for padding
 	_num_steps = outer_nests_term + inner_nest_term + nest_tok_term
 	# num_steps = max(_num_steps, _num_steps_out)    
 	return _num_steps, _num_steps_out

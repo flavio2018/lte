@@ -118,21 +118,17 @@ def encdec_step(encoder, decoder, final_mlp, sample, target, samples_len, target
 	hid_size = encoder.h_t_1.size(1)
 
 	for char_pos in range(sample.size(1)):
-		hidden_mask = get_hidden_mask(samples_len, hid_size, device)
-		output = encoder(sample[:, char_pos, :].squeeze(), hidden_mask)
+		output = encoder(sample[:, char_pos, :].squeeze())
 		samples_len = reduce_lens(samples_len)
 		h_dict, c_dict = save_states(encoder, h_dict, c_dict, samples_len)
 
 	decoder.set_states(h_dict, c_dict)
 
-	targets_len_copy = targets_len.copy()
 	for char_pos in range(target.size(1) - 1):
-		hidden_mask = get_hidden_mask(targets_len_copy, hid_size, device)
 		if outputs:
-			output = decoder(outputs[-1], hidden_mask)  # no teacher forcing
+			output = decoder(outputs[-1])  # no teacher forcing
 		else:
-			output = decoder(target[:, char_pos, :].squeeze(), hidden_mask)
-		targets_len_copy = reduce_lens(targets_len_copy)
+			output = decoder(target[:, char_pos, :].squeeze())
 		outputs.append(output)
 	outputs = [final_mlp(o) for o in outputs]
 	return outputs

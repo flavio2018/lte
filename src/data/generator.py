@@ -66,7 +66,7 @@ def generate_batch(max_length, max_nesting, batch_size, split='train', ops='asmi
 		few_samples = [generate_sample(length=max_length, nesting=max_nesting, split=split, ops=ops, mod=mod) for i in range(batch_size)]
 
 	samples_len = [len(x) for x, y in few_samples]
-	targets_len = [len(y) + 1 for x, y in few_samples]  # targets start with sos
+	targets_len = [len(y) + 2 for x, y in few_samples]  # targets start with SOS and end with EOS
 
 	tensor_samples = [make_tensor(x, token2pos, vocab_size) for x, y in few_samples]
 	tensor_targets = [make_target_tensor(y, target_token2pos, target_vocab_size) for x, y in few_samples]
@@ -120,7 +120,7 @@ class SubsetDataset:
 												split=split, ops=ops, mod=mod) for i in range(batch_size)]
 
 		samples_len = [len(x) for x, y in few_samples]
-		targets_len = [len(y) + 1 for x, y in few_samples]  # targets start with sos
+		targets_len = [len(y) + 2 for x, y in few_samples]  # targets start with SOS and end with EOS
 
 		tensor_samples = [make_tensor(x, token2pos, vocab_size) for x, y in few_samples]
 		tensor_targets = [make_target_tensor(y, target_token2pos, target_vocab_size) for x, y in few_samples]

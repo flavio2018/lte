@@ -68,7 +68,7 @@ class DeepLSTM(torch.nn.Module):
             else:
                 torch.nn.init.xavier_normal_(param, gain=torch.nn.init.calculate_gain('tanh', param))
     
-    def forward(self, x)
+    def forward(self, x):
         self.h_t_1, self.c_t_1 = self.lstm_cell_1(x, (self.h_t_1, self.c_t_1))
         #self.h_t_1, self.c_t_1 = self.dropout(self.h_t_1), self.dropout(self.c_t_1)
         self.h_t_2, self.c_t_2 = self.lstm_cell_2(self.h_t_1, (self.h_t_2, self.c_t_2))

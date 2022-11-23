@@ -61,9 +61,12 @@ def generate_batch(max_length, max_nesting, batch_size, split='train', ops='asmi
 	
 	if split != 'test':
 		few_samples = [generate_sample(length=torch.randint(1, max_length+1, (1,)).item(),
-								   nesting=torch.randint(1, max_nesting+1, (1,)).item(), split=split, ops=ops, mod=mod) for i in range(batch_size)]
+									   nesting=torch.randint(1, max_nesting+1, (1,)).item(),
+									   split=split, ops=ops, mod=mod) for i in range(batch_size)]
 	else:
-		few_samples = [generate_sample(length=max_length, nesting=max_nesting, split=split, ops=ops, mod=mod) for i in range(batch_size)]
+		few_samples = [generate_sample(length=max_length,
+									   nesting=max_nesting,
+									   split=split, ops=ops, mod=mod) for i in range(batch_size)]
 
 	samples_len = [len(x) for x, y in few_samples]
 	targets_len = [len(y) + 2 for x, y in few_samples]  # targets start with SOS and end with EOS

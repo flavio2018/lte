@@ -12,7 +12,7 @@ _PAD = '#'
 
 
 def get_vocab_chars():
-	return set('abcdefghijklmnopqrstuvwxyz0123456789()%+*-=<>: ')
+	return set('abcdefghijklmnopqrstuvwxyz0123456789()%+*-=<>[]: ')
 
 
 def get_target_vocab_chars():
@@ -67,6 +67,8 @@ def generate_batch(max_length, max_nesting, batch_size, split='train', ops='asmi
 		few_samples = [generate_sample(length=max_length,
 									   nesting=max_nesting,
 									   split=split, ops=ops, mod=mod) for i in range(batch_size)]
+	# revert target
+	# few_samples = [x, y[::-1] for x, y in few_samples]
 
 	samples_len = [len(x) for x, y in few_samples]
 	targets_len = [len(y) + 2 for x, y in few_samples]  # targets start with SOS and end with EOS

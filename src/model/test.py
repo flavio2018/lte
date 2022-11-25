@@ -110,12 +110,32 @@ def encdec_fwd_padded_batch(encoder, decoder, sample, target, samples_len, targe
 	return outputs
 
 
+def encdec_dntm_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, device):
+	outputs = []
+	h_dict = {}
+	samples_len = samples_len.copy()
+
+	for char_pos in range(sample.size(1)):
+		output = encoder(sample[:, char_pos, :].squeeze())
+		samples_len = reduce_lens(samples_len)
+		h_dict = save_states_dntm(model, h_dict, samples_len)
+
+	decoder.set_states(h_dict)
+
+	for char_pos in range(target.size(1) - 1):
+		if outputs:
+			output = decoder(outputs[-1])  # no TF
+		else:
+			output = decoder(target[:, char_pos, :].squeeze())
+		outputs.append(output)
+	outputs = [final_mlp(o) for o in outputs]
+	return outputs
+
+
 def encdec_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, device):
 	outputs = []
 	h_dict, c_dict = {1: {}, 2: {}}, {1: {}, 2: {}}
 	samples_len = samples_len.copy()
-	targets_len = targets_len.copy()
-	hid_size = encoder.h_t_1.size(1)
 
 	for char_pos in range(sample.size(1)):
 		output = encoder(sample[:, char_pos, :].squeeze())

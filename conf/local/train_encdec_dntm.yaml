@@ -1,0 +1,23 @@
+defaults:
+        - override hydra/hydra_logging: none
+        - override hydra/job_logging: custom
+        - _self_
+
+hydra:
+  run:
+    dir: ../hydra/${hydra.job.name}/${now:%Y-%B-%d_%H-%M-%S}
+
+codename: encdec_dntm
+max_iter: 10000
+mod: 3
+bs: 128
+lr: 3e-4
+max_len: 5
+max_nes: 2
+hid_size: 100
+mem_size: 100
+content_size: 8
+address_size: 8
+device: 'cuda'
+ops: 'asmif'
+cl_mix: true

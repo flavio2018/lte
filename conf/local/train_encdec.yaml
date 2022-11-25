@@ -17,4 +17,4 @@ max_nes: 2
 hid_size: 400
 device: 'cuda'
 ops: 'asmif'
-cl_mix: false
+cl_mix: true

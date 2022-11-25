@@ -1,6 +1,7 @@
 """Train encoder-decoder models on LTE task."""
 
-from model.dntm import DynamicNeuralTuringMachine, DynamicNeuralTuringMachineMemory
+from model.dntm.DynamicNeuralTuringMachine import DynamicNeuralTuringMachine as DNTM
+from model.dntm.DynamicNeuralTuringMachineMemory import DynamicNeuralTuringMachineMemory as DNTMMem
 from model.mlp import MLP
 from model.test import eval_encdec_dntm_padded, compute_loss, encdec_dntm_step, get_num_unequal
 from data.generator import get_vocab_size, get_target_vocab_size, generate_batch
@@ -20,8 +21,8 @@ FREQ_EVAL = 10
 def train_encdec(cfg):
 	print(omegaconf.OmegaConf.to_yaml(cfg))
 	
-	encoder = DynamicNeuralTuringMachine(
-		memory=DynamicNeuralTuringMachineMemory(
+	encoder = DNTM(
+		memory=DNTMMem(
 			n_locations=cfg.mem_size,
 			content_size=cfg.content_size,
 			address_size=cfg.address_size,
@@ -33,8 +34,8 @@ def train_encdec(cfg):
 		controller_output_size=get_vocab_size(),
 	).to(cfg.device)
 
-	decoder = DynamicNeuralTuringMachine(
-		memory=DynamicNeuralTuringMachineMemory(
+	decoder = DNTM(
+		memory=DNTMMem(
 			n_locations=cfg.mem_size,
 			content_size=cfg.content_size,
 			address_size=cfg.address_size,

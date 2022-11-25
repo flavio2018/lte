@@ -53,6 +53,7 @@ class DeepLSTM(torch.nn.Module):
         self.register_buffer("c_t_1", torch.zeros(batch_size, hidden_size))
         self.register_buffer("h_t_2", torch.zeros(batch_size, hidden_size))
         self.register_buffer("c_t_2", torch.zeros(batch_size, hidden_size))
+        self.dropout = torch.nn.Dropout(0.0)
         self._init_parameters()
     
     def _init_parameters(self):
@@ -61,12 +62,14 @@ class DeepLSTM(torch.nn.Module):
                 torch.nn.init.normal_(param, std=0.1)
             else:
                 torch.nn.init.xavier_normal_(param, gain=torch.nn.init.calculate_gain('tanh', param))
+                # torch.nn.init.uniform_(param, a=-0.08, b=0.08)
 
         for name, param in self.lstm_cell_2.named_parameters():
             if 'bias' in name:
                 torch.nn.init.normal_(param, std=0.1)
             else:
                 torch.nn.init.xavier_normal_(param, gain=torch.nn.init.calculate_gain('tanh', param))
+                # torch.nn.init.uniform_(param, a=-0.08, b=0.08)
     
     def forward(self, x):
         self.h_t_1, self.c_t_1 = self.lstm_cell_1(x, (self.h_t_1, self.c_t_1))
@@ -86,18 +89,18 @@ class DeepLSTM(torch.nn.Module):
     
     def set_states(self, h_dict, c_dict):
         # make lists to sort
-        h_dict_1 = [(i, h) for i, h in h_dict[1].items()]
-        h_dict_2 = [(i, h) for i, h in h_dict[2].items()]
-        c_dict_1 = [(i, h) for i, h in c_dict[1].items()]
-        c_dict_2 = [(i, h) for i, h in c_dict[2].items()]
+        h_1 = [(i, h) for i, h in h_dict[1].items()]
+        h_2 = [(i, h) for i, h in h_dict[2].items()]
+        c_1 = [(i, h) for i, h in c_dict[1].items()]
+        c_2 = [(i, h) for i, h in c_dict[2].items()]
         
         # sort
-        h_dict_1 = sorted(h_dict_1, key=lambda x: x[0])
-        h_dict_2 = sorted(h_dict_2, key=lambda x: x[0])
-        c_dict_1 = sorted(c_dict_1, key=lambda x: x[0])
-        c_dict_2 = sorted(c_dict_2, key=lambda x: x[0])
+        h_1 = sorted(h_1, key=lambda x: x[0])
+        h_2 = sorted(h_2, key=lambda x: x[0])
+        c_1 = sorted(c_1, key=lambda x: x[0])
+        c_2 = sorted(c_2, key=lambda x: x[0])
         
-        self.h_t_1 = torch.concat([h for _, h in h_dict_1])
-        self.c_t_1 = torch.concat([c for _, c in c_dict_1])
-        self.h_t_2 = torch.concat([h for _, h in h_dict_2])
-        self.c_t_2 = torch.concat([c for _, c in c_dict_2])
+        self.h_t_1 = torch.concat([h for _, h in h_1])
+        self.c_t_1 = torch.concat([c for _, c in c_1])
+        self.h_t_2 = torch.concat([h for _, h in h_2])
+        self.c_t_2 = torch.concat([c for _, c in c_2])

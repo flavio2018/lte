@@ -28,9 +28,11 @@ def train_encdec(cfg):
 			address_size=cfg.address_size,
 			controller_input_size=get_vocab_size(),
 			controller_hidden_state_size=cfg.hid_size,
+			batch_size=cfg.bs,
 		),
 		controller_hidden_state_size=cfg.hid_size,
 		controller_input_size=get_vocab_size(),
+		batch_size=cfg.bs,
 		controller_output_size=get_vocab_size(),
 	).to(cfg.device)
 

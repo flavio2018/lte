@@ -190,6 +190,15 @@ def eval_encdec_padded(encoder, decoder, final_mlp, padded_samples_batch, padded
 	print(batch_acc(outputs, padded_targets_batch[:, 1:, :], get_target_vocab_size()).item())
 	eval_padded(outputs, padded_targets_batch, padded_samples_batch)
 
+def eval_encdec_dntm_padded(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, device):
+	with torch.no_grad():
+		outputs = encdec_dntm_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device)
+	encoder.detach_states()
+	decoder.detach_states()
+	print(compute_loss(loss, outputs, padded_targets_batch[:, 1:, :]).item())
+	print(batch_acc(outputs, padded_targets_batch[:, 1:, :], get_target_vocab_size()).item())
+	eval_padded(outputs, padded_targets_batch, padded_samples_batch)
+
 def compute_loss(loss, outputs, target):
 	cumulative_loss = 0
 	idx_pad = get_target_vocab_size() - 1

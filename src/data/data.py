@@ -113,7 +113,7 @@ class ForLoop:
         return self.accumulator_code, valueless_code
 
 
-def generate_sample(length, nesting, split='train', ops='asmif', mod=3):
+def generate_sample(length, nesting, split='train', ops='asmif'):
     program_split = ''
     
     while(program_split != split):
@@ -157,9 +157,9 @@ def generate_sample(length, nesting, split='train', ops='asmif', mod=3):
         program += final_code[1:-1]
 
         program_hash = hash(program)
-        if program_hash % mod == 0:
+        if program_hash % 3 == 0:
             program_split = 'train'
-        elif program_hash % mod == 1:
+        elif program_hash % 3 == 1:
             program_split = 'valid'
         else:
             program_split = 'test'

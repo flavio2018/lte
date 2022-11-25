@@ -1,6 +1,7 @@
 import torch
 from data.generator import get_pos2token, get_target_pos2token, get_vocab_size, get_target_vocab_size
 from utils.rnn_utils import save_states, save_states_dntm, get_hidden_mask, get_reading_mask, reduce_lens, populate_first_output, build_first_output, batch_acc
+from pdb import set_trace
 
 
 def input_tensors_to_str(x_t):
@@ -118,7 +119,7 @@ def encdec_dntm_step(encoder, decoder, final_mlp, sample, target, samples_len, t
 	for char_pos in range(sample.size(1)):
 		output = encoder(sample[:, char_pos, :].squeeze())
 		samples_len = reduce_lens(samples_len)
-		h_dict = save_states_dntm(model, h_dict, samples_len)
+		h_dict = save_states_dntm(encoder, h_dict, samples_len)
 
 	decoder.set_states(h_dict)
 
@@ -200,6 +201,10 @@ def eval_encdec_dntm_padded(encoder, decoder, final_mlp, padded_samples_batch, p
 	eval_padded(outputs, padded_targets_batch, padded_samples_batch)
 
 def compute_loss(loss, outputs, target):
+	# for b in range(32):
+	# 	print(f"{b} output: {''.join([target_tensors_to_str([o[b, :] for o in outputs])])}")
+	# 	print(f"{b} target: {target_tensors_to_str(target[b, :, :])}")
+	# print("-")
 	cumulative_loss = 0
 	idx_pad = get_target_vocab_size() - 1
 	idx_targets = target.argmax(dim=-1)
@@ -208,8 +213,13 @@ def compute_loss(loss, outputs, target):
 		char_loss = loss(output, torch.argmax(target[:, char_pos, :].squeeze(), dim=1))
 		masked_char_loss = char_loss * mask[:, char_pos]
 		cumulative_loss += masked_char_loss.sum()
-		# set_trace()
+		# print("avg std logits: {:3f}".format(output.std(1).mean().cpu().detach().numpy()))
+		# print(f"nonzero: {torch.count_nonzero(masked_char_loss)}")
+		# print("cum loss: {:3f}".format(cumulative_loss.item()))
+		# print("-")
 	avg_loss = cumulative_loss / mask.sum()
+	# print("avg loss: {:3f}".format(avg_loss.item()))
+	# print()
 	return avg_loss
 
 

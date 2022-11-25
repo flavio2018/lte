@@ -6,7 +6,6 @@ from model.test import eval_encdec_padded, compute_loss, encdec_step, get_num_un
 from data.generator import get_vocab_size, get_target_vocab_size, generate_batch
 from utils.rnn_utils import batch_acc
 from utils.wandb_utils import log_weights_gradient, log_params_norm
-import collections
 import numpy as np
 import torch
 import wandb
@@ -14,9 +13,7 @@ import hydra
 import omegaconf
 
 
-LOSS_WIN_SIZE = 10
 FREQ_EVAL = 10
-FREQ_LOSS_RECORDING = 100001
 
 
 @hydra.main(config_path="../conf/local", config_name="train_encdec")
@@ -48,8 +45,9 @@ def train_encdec(cfg):
 
 	loss = torch.nn.CrossEntropyLoss(reduction='none')
 	opt = torch.optim.Adam(enc_dec_parameters, lr=cfg.lr)
-	lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=1)
+	lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=0.9)
 	FREQ_LR_DECAY = cfg.max_iter // 100
+	FREQ_WANDB_LOG = np.ceil(cfg.max_iter / 100000)  # suggested number of datapoints for wandb scalars
 
 	wandb.init(
 		project="lte",
@@ -61,47 +59,42 @@ def train_encdec(cfg):
 	wandb.config.update(omegaconf.OmegaConf.to_container(
 		cfg, resolve=True, throw_on_missing=True))
 	
-	losses = collections.deque([], maxlen=LOSS_WIN_SIZE)	
-	# LEN, NES, losses = get_len_nes(1, 1, losses, cfg)
-	if cfg.cl_mix:
-		LEN, NES = cfg.max_len, cfg.max_nes
-	else:
-		LEN, NES = 1, 1
-
 	for i_step in range(cfg.max_iter):
-		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, ops=cfg.ops, mod=cfg.mod)
+		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, ops=cfg.ops)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 		loss_step, acc_step = train_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, opt, cfg.device)
-		wandb.log({
-				"lr": lr_scheduler.get_last_lr()[-1],
-				"loss": loss_step,
-				"acc": acc_step,
-				"update": i_step,
-			})
-		#log_weights_gradient(encoder, i_step)
-		log_weights_gradient(decoder, i_step)
-		log_weights_gradient(final_mlp, i_step)
-		#log_params_norm(encoder, i_step)
-		log_params_norm(decoder, i_step)
-		log_params_norm(final_mlp, i_step)
+		
 		if i_step % 100 == 0:
 			eval_encdec_padded(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 
-		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(LEN, NES, cfg.bs, split='valid', ops=cfg.ops, mod=cfg.mod)
+		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='valid', ops=cfg.ops)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 		loss_valid_step, acc_valid_step, _ = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 		
-		wandb.log({
-			"val_loss": loss_valid_step,
-			"val_acc": acc_valid_step,
-			"update": i_step,
-		})
+		if i_step % FREQ_WANDB_LOG == 0:
+			wandb.log({
+					"lr": lr_scheduler.get_last_lr()[-1],
+					"loss": loss_step,
+					"acc": acc_step,
+					"update": i_step,
+				})
+			#log_weights_gradient(encoder, i_step)
+			log_weights_gradient(decoder, i_step)
+			log_weights_gradient(final_mlp, i_step)
+			#log_params_norm(encoder, i_step)
+			log_params_norm(decoder, i_step)
+			log_params_norm(final_mlp, i_step)
+			wandb.log({
+				"val_loss": loss_valid_step,
+				"val_acc": acc_valid_step,
+				"update": i_step,
+			})
 
 		if (i_step % FREQ_LR_DECAY == 0) and (lr_scheduler.get_last_lr()[-1] > 8e-5):
 			lr_scheduler.step()
 		
 		if i_step % FREQ_EVAL == 0:
-			padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='test', ops=cfg.ops, mod=cfg.mod)
+			padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='test', ops=cfg.ops)
 			padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
 			_, acc_test, num_unequal = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
 			wandb.log({

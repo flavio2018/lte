@@ -10,9 +10,9 @@ def input_tensors_to_str(x_t):
 
 
 def target_tensors_to_str(y_t):
-    pos2token = get_target_pos2token()
-    idx_outputs = [torch.argmax(o).item() for o in y_t]
-    return ''.join([pos2token[idx] for idx in idx_outputs])
+	pos2token = get_target_pos2token()
+	idx_outputs = [torch.argmax(o).item() for o in y_t]
+	return ''.join([pos2token[idx] for idx in idx_outputs])
 
 
 @torch.no_grad()
@@ -162,13 +162,13 @@ def eval_dntm_padded(model, padded_samples_batch, padded_targets_batch, samples_
 	eval_padded(outputs, padded_targets_batch, padded_samples_batch)
 
 def eval_encdec_padded(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, device):
-    with torch.no_grad():
-        outputs = encdec_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device)
-    encoder.detach_states()
-    decoder.detach_states()
-    print(compute_loss(loss, outputs, padded_targets_batch[:, 1:, :]).item())
-    print(batch_acc(outputs, padded_targets_batch[:, 1:, :], get_target_vocab_size()).item())
-    eval_padded(outputs, padded_targets_batch, padded_samples_batch)
+	with torch.no_grad():
+		outputs = encdec_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, device)
+	encoder.detach_states()
+	decoder.detach_states()
+	print(compute_loss(loss, outputs, padded_targets_batch[:, 1:, :]).item())
+	print(batch_acc(outputs, padded_targets_batch[:, 1:, :], get_target_vocab_size()).item())
+	eval_padded(outputs, padded_targets_batch, padded_samples_batch)
 
 def compute_loss(loss, outputs, target):
 	cumulative_loss = 0
@@ -182,3 +182,29 @@ def compute_loss(loss, outputs, target):
 		# set_trace()
 	avg_loss = cumulative_loss / mask.sum()
 	return avg_loss
+
+
+def get_lengths(batch):
+	EOS_idx = batch.size(2) - 2
+	lengths_dict = {}
+	for s, l in torch.argwhere((batch.argmax(2) == EOS_idx).type(torch.int)):
+		lengths_dict.setdefault(s.item(), l.item())
+	return lengths_dict
+
+
+def get_num_unequal(x, y):
+	def fill_missing(lengths):
+		for i in range(y.size(0)):
+			if i not in lengths:
+				lengths[i] = 0
+		return lengths
+	
+	x = torch.concat([o.unsqueeze(1) for o in x], dim=1)
+	lengths_x = get_lengths(x)
+	lengths_y = get_lengths(y)
+	lengths_x = fill_missing(lengths_x)
+	
+	num_unequal = 0
+	for l in range(x.shape[0]):
+		num_unequal += int(lengths_x[l] != lengths_y[l])
+	return num_unequal

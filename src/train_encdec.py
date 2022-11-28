@@ -45,7 +45,7 @@ def train_encdec(cfg):
 
 	loss = torch.nn.CrossEntropyLoss(reduction='none')
 	opt = torch.optim.Adam(enc_dec_parameters, lr=cfg.lr)
-	lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=0.9)
+	lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=cfg.gamma)
 	FREQ_LR_DECAY = cfg.max_iter // 100
 	FREQ_WANDB_LOG = np.ceil(cfg.max_iter / 100000)  # suggested number of datapoints for wandb scalars
 

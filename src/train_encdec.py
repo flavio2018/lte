@@ -96,11 +96,15 @@ def train_encdec(cfg):
 		if i_step % FREQ_EVAL == 0:
 			padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='test', ops=cfg.ops)
 			padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
-			_, acc_test, num_unequal = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
+			_, acc_test, len_stats = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
+			num_unequal, num_longer, num_shorter, avg_len_diff = len_stats
 			wandb.log({
 				"acc_test": acc_test,
 				"test_update": i_step // FREQ_EVAL,
 				"num_unequal": num_unequal,
+				"num_longer": num_longer,
+				"num_shorter": num_shorter,
+				"avg_len_diff": avg_len_diff,
 			})
 		
 
@@ -130,11 +134,11 @@ def valid_step(encoder, decoder, final_mlp, sample, target, samples_len, targets
 	outputs = encdec_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, device)
 	avg_loss = compute_loss(loss, outputs, target[:, 1:, :])
 	acc = batch_acc(outputs, target[:, 1:, :], get_target_vocab_size())
-	num_unequal = get_num_unequal(outputs, target[:, 1:, :])
+	len_stats = get_num_unequal(outputs, target[:, 1:, :])
 	
 	encoder.detach_states()
 	decoder.detach_states()
-	return avg_loss.item(), acc.item(), num_unequal
+	return avg_loss.item(), acc.item(), len_stats
 
 
 if __name__ == '__main__':

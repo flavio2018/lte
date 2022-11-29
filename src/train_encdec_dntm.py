@@ -152,11 +152,11 @@ def valid_step(encoder, decoder, final_mlp, sample, target, samples_len, targets
 	outputs = encdec_dntm_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, device)
 	avg_loss = compute_loss(loss, outputs, target[:, 1:, :])
 	acc = batch_acc(outputs, target[:, 1:, :], get_target_vocab_size())
-	num_unequal = get_num_unequal(outputs, target[:, 1:, :])
+	len_stats = get_num_unequal(outputs, target[:, 1:, :])
 	
 	encoder.detach_states()
 	decoder.detach_states()
-	return avg_loss.item(), acc.item(), num_unequal
+	return avg_loss.item(), acc.item(), len_stats
 
 
 if __name__ == '__main__':

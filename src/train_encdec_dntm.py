@@ -6,7 +6,7 @@ from model.mlp import MLP
 from model.test import eval_encdec_dntm_padded, compute_loss, encdec_dntm_step, get_num_unequal
 from data.generator import get_vocab_size, get_target_vocab_size, generate_batch
 from utils.rnn_utils import batch_acc
-from utils.wandb_utils import log_weights_gradient, log_params_norm
+from utils.wandb_utils import log_weights_gradient, log_params_norm, log_intermediate_values_norm
 import numpy as np
 import torch
 import wandb
@@ -62,7 +62,7 @@ def train_encdec(cfg):
 
 	loss = torch.nn.CrossEntropyLoss(reduction='none')
 	opt = torch.optim.Adam(enc_dec_parameters, lr=cfg.lr)
-	lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=0.9)
+	lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=cfg.gamma)
 	FREQ_LR_DECAY = cfg.max_iter // 100
 	FREQ_WANDB_LOG = np.ceil(cfg.max_iter / 100000)  # suggested number of datapoints for wandb scalars
 
@@ -100,6 +100,7 @@ def train_encdec(cfg):
 			log_weights_gradient(final_mlp, i_step)
 			#log_params_norm(encoder, i_step)
 			log_params_norm(decoder, i_step)
+			log_intermediate_values_norm(decoder, i_step)
 			log_params_norm(final_mlp, i_step)
 			wandb.log({
 				"val_loss": loss_valid_step,
@@ -113,11 +114,15 @@ def train_encdec(cfg):
 		if i_step % FREQ_EVAL == 0:
 			padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='test', ops=cfg.ops)
 			padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
-			_, acc_test, num_unequal = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
+			_, acc_test, len_stats = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
+			num_unequal, num_longer, num_shorter, avg_len_diff = len_stats
 			wandb.log({
 				"acc_test": acc_test,
 				"test_update": i_step // FREQ_EVAL,
 				"num_unequal": num_unequal,
+				"num_longer": num_longer,
+				"num_shorter": num_shorter,
+				"avg_len_diff": avg_len_diff,
 			})
 		
 

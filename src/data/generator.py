@@ -68,7 +68,7 @@ def generate_batch(max_length, max_nesting, batch_size, split='train', ops='asmi
 									   nesting=max_nesting,
 									   split=split, ops=ops) for i in range(batch_size)]
 	# revert target
-	# few_samples = [x, y[::-1] for x, y in few_samples]
+	# few_samples = [(x, y[::-1]) for x, y in few_samples]
 
 	samples_len = [len(x) for x, y in few_samples]
 	targets_len = [len(y) + 2 for x, y in few_samples]  # targets start with SOS and end with EOS

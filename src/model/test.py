@@ -2,6 +2,7 @@ import torch
 from data.generator import get_pos2token, get_target_pos2token, get_vocab_size, get_target_vocab_size
 from utils.rnn_utils import save_states, save_states_dntm, get_hidden_mask, get_reading_mask, reduce_lens, populate_first_output, build_first_output, batch_acc
 from pdb import set_trace
+from collections import OrderedDict
 
 
 def input_tensors_to_str(x_t):
@@ -218,6 +219,8 @@ def compute_loss(loss, outputs, target):
 		# print("cum loss: {:3f}".format(cumulative_loss.item()))
 		# print("-")
 	avg_loss = cumulative_loss / mask.sum()
+	# _, _, _, avg_len_diff = get_num_unequal(outputs, target)  # penalize outputs of different length than target
+	# avg_loss += avg_len_diff
 	# print("avg loss: {:3f}".format(avg_loss.item()))
 	# print()
 	return avg_loss
@@ -225,9 +228,10 @@ def compute_loss(loss, outputs, target):
 
 def get_lengths(batch):
 	EOS_idx = batch.size(2) - 2
-	lengths_dict = {}
+	lengths_dict = OrderedDict()  # seq -> len
+	# for each sequence, get positions where idx == EOS 
 	for s, l in torch.argwhere((batch.argmax(2) == EOS_idx).type(torch.int)):
-		lengths_dict.setdefault(s.item(), l.item())
+		lengths_dict.setdefault(s.item(), l.item())  # get only the first occurence for each seq (i.e., seq length)
 	return lengths_dict
 
 
@@ -237,13 +241,23 @@ def get_num_unequal(x, y):
 			if i not in lengths:
 				lengths[i] = 0
 		return lengths
-	
+
 	x = torch.concat([o.unsqueeze(1) for o in x], dim=1)
 	lengths_x = get_lengths(x)
 	lengths_y = get_lengths(y)
 	lengths_x = fill_missing(lengths_x)
-	
+
+	lengths_x = torch.Tensor(list(lengths_x.values()))
+	lengths_y = torch.Tensor(list(lengths_y.values()))
+
 	num_unequal = 0
-	for l in range(x.shape[0]):
-		num_unequal += int(lengths_x[l] != lengths_y[l])
-	return num_unequal
+	num_longer = 0
+	num_shorter = 0
+	avg_len_diff = 0
+	
+	num_unequal = (lengths_x != lengths_y).sum().item()
+	num_longer = (lengths_x > lengths_y).sum().item()
+	num_shorter = (lengths_x < lengths_y).sum().item()
+	avg_len_diff = (abs(lengths_x - lengths_y)).sum().item()
+
+	return (num_unequal, num_longer, num_shorter, avg_len_diff/len(lengths_x))

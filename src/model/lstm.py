@@ -43,16 +43,16 @@ class DeepLSTM(torch.nn.Module):
         super(DeepLSTM, self).__init__()
         self.lstm_cell_1 = torch.nn.LSTMCell(
             input_size=input_size,
-            hidden_size=hidden_size)
+            hidden_size=hidden_size[0])
         self.lstm_cell_2 = torch.nn.LSTMCell(
-            input_size=hidden_size,
-            hidden_size=hidden_size)
-        self.W_o = torch.nn.Parameter(torch.rand(output_size, hidden_size)*0.01)
+            input_size=hidden_size[0],
+            hidden_size=hidden_size[1])
+        self.W_o = torch.nn.Parameter(torch.rand(output_size, hidden_size[1])*0.01)
         self.b_o = torch.nn.Parameter(torch.rand(1)*0.01)
-        self.register_buffer("h_t_1", torch.zeros(batch_size, hidden_size))
-        self.register_buffer("c_t_1", torch.zeros(batch_size, hidden_size))
-        self.register_buffer("h_t_2", torch.zeros(batch_size, hidden_size))
-        self.register_buffer("c_t_2", torch.zeros(batch_size, hidden_size))
+        self.register_buffer("h_t_1", torch.zeros(batch_size, hidden_size[0]))
+        self.register_buffer("c_t_1", torch.zeros(batch_size, hidden_size[0]))
+        self.register_buffer("h_t_2", torch.zeros(batch_size, hidden_size[1]))
+        self.register_buffer("c_t_2", torch.zeros(batch_size, hidden_size[1]))
         self.dropout = torch.nn.Dropout(0.0)
         self._init_parameters()
     

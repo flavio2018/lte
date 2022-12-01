@@ -15,5 +15,6 @@ gamma: 1
 max_len: 5
 max_nes: 2
 hid_size: 400
+hid_size2: 400
 device: 'cuda'
 ops: 'asmif'

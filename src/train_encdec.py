@@ -22,14 +22,14 @@ def train_encdec(cfg):
 	
 	encoder = DeepLSTM(
 		input_size=get_vocab_size(),
-		hidden_size=cfg.hid_size,
+		hidden_size=[cfg.hid_size, cfg.hid_size2],
 		output_size=get_vocab_size(),
 		batch_size=cfg.bs,
 	).to(cfg.device)
 
 	decoder = DeepLSTM(
 		input_size=get_target_vocab_size(),
-		hidden_size=cfg.hid_size,
+		hidden_size=[cfg.hid_size, cfg.hid_size2],
 		output_size=get_target_vocab_size(),
 		batch_size=cfg.bs,
 	).to(cfg.device)

@@ -13,7 +13,7 @@ _PAD = '#'
 
 
 class LTEGenerator:
-    def __init__(self):
+    def __init__(self, device):
         x_vocab_chars = string.ascii_lowercase + string.digits + '()%+*-=<>[]: '
         y_vocab_chars = string.digits + '-'
         self.x_vocab = vocab(
@@ -28,6 +28,7 @@ class LTEGenerator:
         self.y_vocab_trans = VocabTransform(self.y_vocab)
         self.x_to_tensor_trans = ToTensor(padding_value=self.x_vocab[_PAD])
         self.y_to_tensor_trans = ToTensor(padding_value=self.y_vocab[_PAD])
+        self.device = torch.device(device)
 
     def _generate_sample(self, max_length, max_nesting, split, ops, batch_size):
         return generate_sample(length=torch.randint(1, max_length+1, (1,)).item(),
@@ -48,8 +49,8 @@ class LTEGenerator:
         
         tokenized_samples = self.x_vocab_trans(samples)
         tokenized_targets = self.y_vocab_trans(targets)
-        padded_samples = self.x_to_tensor_trans(tokenized_samples)
-        padded_targets = self.y_to_tensor_trans(tokenized_targets)
+        padded_samples = self.x_to_tensor_trans(tokenized_samples).to(self.device)
+        padded_targets = self.y_to_tensor_trans(tokenized_targets).to(self.device)
         return (F.one_hot(padded_samples).type(torch.float),
                 F.one_hot(padded_targets).type(torch.float),
                 samples_len,

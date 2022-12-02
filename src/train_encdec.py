@@ -19,7 +19,7 @@ FREQ_EVAL = 10
 def train_encdec(cfg):
 	print(omegaconf.OmegaConf.to_yaml(cfg))
 
-	lte = LTEGenerator()
+	lte = LTEGenerator(device=cfg.device)
 	
 	encoder = DeepLSTM(
 		input_size=len(lte.x_vocab),
@@ -62,7 +62,6 @@ def train_encdec(cfg):
 	
 	for i_step in range(cfg.max_iter):
 		X, Y, len_X, len_Y = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, ops=cfg.ops)
-		X, Y = X.to(cfg.device), Y.to(cfg.device)
 		loss_step, acc_step = train_step((encoder, decoder, final_mlp), (X, Y, len_X, len_Y), lte, loss, opt, cfg.device)
 		
 		if i_step % 100 == 0:

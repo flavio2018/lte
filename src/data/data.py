@@ -107,7 +107,7 @@ class ForLoop:
     
     def generate_code(self, codes):
         op = "+=" if self.sum else "-="
-        valueless_code = self.accumulator_code + "=" + str(self.accumulator_value) + "\n" + \
+        valueless_code = self.accumulator_code + "=" + str(self.accumulator_value) + \
                         "for[" + str(self.num_loops) + "]" + \
                         self.accumulator_code + op + codes[0]
         return self.accumulator_code, valueless_code
@@ -149,7 +149,7 @@ def generate_sample(length, nesting, split='train', ops='asmif'):
             new_value = op.evaluate(values)
             if isinstance(op, Assignment) or isinstance(op, ForLoop):
                 new_code, valueless_code = op.generate_code(codes)
-                program += valueless_code + '\n'
+                program += valueless_code
             else:
                 new_code = op.generate_code(codes)
             stack.append((new_value, new_code))

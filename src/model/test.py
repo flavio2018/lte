@@ -11,8 +11,8 @@ def encdec_dntm_step(encoder, decoder, final_mlp, sample, target, samples_len, t
 	for char_pos in range(sample.size(1)):
 		output = encoder(sample[:, char_pos, :].squeeze())
 		samples_len = reduce_lens(samples_len)
-		h_dict = save_states_dntm(encoder, h_dict, samples_len)h
-
+		h_dict = save_states_dntm(encoder, h_dict, samples_len)
+	
 	decoder.set_states(h_dict)
 
 	for char_pos in range(target.size(1) - 1):
@@ -182,6 +182,14 @@ def get_len_stats(x, y):
 	sum_len_diff = (abs(lengths_x - lengths_y)).sum().item()
 
 	return (num_unequal, num_longer, num_shorter, sum_len_diff)
+
+
+def penalty(delta):
+    w = 0.5
+    p = 0
+    for i in range(int(delta)):
+        p += w**i
+    return p / 2
 
 
 def batch_acc_modified(outputs, targets, vocab_size):

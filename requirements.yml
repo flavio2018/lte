@@ -14,6 +14,7 @@ dependencies:
         - numpy
         - pandas
         - pytorch::pytorch
+        - pytorch::torchtext
         - seaborn
         - torchmetrics
         - tqdm

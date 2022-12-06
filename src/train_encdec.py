@@ -6,6 +6,8 @@ from model.test import eval_encdec_padded, compute_loss, batch_acc, encdec_step,
 from data.generator import LTEGenerator
 from utils.wandb_utils import log_weights_gradient, log_params_norm
 import numpy as np
+from datetime import datetime as dt
+import os
 import torch
 import wandb
 import hydra
@@ -66,6 +68,16 @@ def train_encdec(cfg):
 		
 		if i_step % 100 == 0:
 			eval_encdec_padded(encoder, decoder, final_mlp, X, Y, len_X, len_Y, loss, lte, cfg.device)
+
+		if i_step % 1000 == 0:
+			torch.save({
+					'update': i_step,
+					'encoder_state_dict': encoder.state_dict(),
+					'decoder_state_dict': decoder.state_dict(),
+					'mlp_state_dict': final_mlp.state_dict(),
+					'opt': opt.state_dict(),
+					'loss_train': loss_step,
+				}, os.path.join(hydra.utils.get_original_cwd(), f"../models/checkpoints/{dt.now().strftime('%Y-%m-%d_%H-%M')}_{cfg.codename}.pth"))
 
 		X, Y, len_X, len_Y = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='valid', ops=cfg.ops)
 		X, Y = X.to(cfg.device), Y.to(cfg.device)

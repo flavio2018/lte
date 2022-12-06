@@ -47,13 +47,12 @@ class DeepLSTM(torch.nn.Module):
         self.lstm_cell_2 = torch.nn.LSTMCell(
             input_size=hidden_size[0],
             hidden_size=hidden_size[1])
-        self.W_o = torch.nn.Parameter(torch.rand(output_size, hidden_size[1])*0.01)
+        self.W_o = torch.nn.Parameter(torch.rand(output_size, hidden_size[0]+hidden_size[1])*0.01)
         self.b_o = torch.nn.Parameter(torch.rand(1)*0.01)
         self.register_buffer("h_t_1", torch.zeros(batch_size, hidden_size[0]))
         self.register_buffer("c_t_1", torch.zeros(batch_size, hidden_size[0]))
         self.register_buffer("h_t_2", torch.zeros(batch_size, hidden_size[1]))
         self.register_buffer("c_t_2", torch.zeros(batch_size, hidden_size[1]))
-        self.dropout = torch.nn.Dropout(0.0)
         self._init_parameters()
     
     def _init_parameters(self):
@@ -62,20 +61,19 @@ class DeepLSTM(torch.nn.Module):
                 torch.nn.init.normal_(param, std=0.1)
             else:
                 torch.nn.init.xavier_normal_(param, gain=torch.nn.init.calculate_gain('tanh', param))
-                # torch.nn.init.uniform_(param, a=-0.08, b=0.08)
 
         for name, param in self.lstm_cell_2.named_parameters():
             if 'bias' in name:
                 torch.nn.init.normal_(param, std=0.1)
             else:
                 torch.nn.init.xavier_normal_(param, gain=torch.nn.init.calculate_gain('tanh', param))
-                # torch.nn.init.uniform_(param, a=-0.08, b=0.08)
     
     def forward(self, x):
         self.h_t_1, self.c_t_1 = self.lstm_cell_1(x, (self.h_t_1, self.c_t_1))
-        #self.h_t_1, self.c_t_1 = self.dropout(self.h_t_1), self.dropout(self.c_t_1)
         self.h_t_2, self.c_t_2 = self.lstm_cell_2(self.h_t_1, (self.h_t_2, self.c_t_2))
-        return self.h_t_2 @ self.W_o.T + self.b_o
+        # self.h_t_2 + self.h_t_1  # skip connection
+        self.h_t_12 = torch.concat([self.h_t_1, self.h_t_2], dim=1)  # layer-wise outputs concat
+        return self.h_t_12 @ self.W_o.T + self.b_o
 
     def detach_states(self):
         self.h_t_1 = self.h_t_1.detach()

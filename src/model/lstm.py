@@ -71,7 +71,7 @@ class DeepLSTM(torch.nn.Module):
     def forward(self, x):
         self.h_t_1, self.c_t_1 = self.lstm_cell_1(x, (self.h_t_1, self.c_t_1))
         self.h_t_2, self.c_t_2 = self.lstm_cell_2(self.h_t_1, (self.h_t_2, self.c_t_2))
-        # self.h_t_2 + self.h_t_1  # skip connection
+        self.h_t_2 + self.h_t_1  # skip connection
         self.h_t_12 = torch.concat([self.h_t_1, self.h_t_2], dim=1)  # layer-wise outputs concat
         return self.h_t_12 @ self.W_o.T + self.b_o
 

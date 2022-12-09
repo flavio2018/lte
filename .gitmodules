@@ -5,3 +5,6 @@
 	path = src/model/dntm
 	url = https://github.com/flavio2018/dntm.git
 	branch = lte
+[submodule "src/model/ut"]
+	path = src/model/ut
+	url = git@github.com:flavio2018/ut.git

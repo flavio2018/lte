@@ -1,14 +1,20 @@
+import hydra
+import omegaconf
+from datetime import datetime as dt
+import os
 import torch
 import numpy as np
 from model.ut.UniversalTransformer import UniversalTransformer
 from model.test import compute_loss, batch_acc
 from data.generator import LTEGenerator
+from tqdm import trange
 import wandb
 
 
 FREQ_EVAL = 10
 
 
+@hydra.main(config_path="../conf/local", config_name="train_ut")
 def train_ut(cfg):
 	print(omegaconf.OmegaConf.to_yaml(cfg))
 
@@ -35,7 +41,7 @@ def train_ut(cfg):
 		cfg, resolve=True, throw_on_missing=True))
 	start_timestamp = dt.now().strftime('%Y-%m-%d_%H-%M')
 
-	for i_step in range(cfg.max_iter):
+	for i_step in trange(cfg.max_iter):
 		X_1h, Y_1h, len_x, len_y = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, ops=cfg.ops)
 		loss_step, acc_step = train_step(ut, (X_1h, Y_1h), lte, xent, opt)
 		
@@ -56,7 +62,7 @@ def train_ut(cfg):
 					'update': i_step,
 					'ut_state_dict': ut.state_dict(),
 					'opt': opt.state_dict(),
-					'loss_train': loss_val,
+					'loss_train': loss_step,
 				}, os.path.join(hydra.utils.get_original_cwd(), f"../models/checkpoints/{start_timestamp}_{cfg.codename}.pth"))
 
 		if i_step % FREQ_EVAL == 0:

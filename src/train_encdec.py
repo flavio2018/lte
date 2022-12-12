@@ -61,6 +61,7 @@ def train_encdec(cfg):
 	wandb.run.name = cfg.codename
 	wandb.config.update(omegaconf.OmegaConf.to_container(
 		cfg, resolve=True, throw_on_missing=True))
+	start_timestamp = dt.now().strftime('%Y-%m-%d_%H-%M')
 	
 	for i_step in range(cfg.max_iter):
 		X, Y, len_X, len_Y = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, ops=cfg.ops)
@@ -77,7 +78,7 @@ def train_encdec(cfg):
 					'mlp_state_dict': final_mlp.state_dict(),
 					'opt': opt.state_dict(),
 					'loss_train': loss_step,
-				}, os.path.join(hydra.utils.get_original_cwd(), f"../models/checkpoints/{dt.now().strftime('%Y-%m-%d_%H-%M')}_{cfg.codename}.pth"))
+				}, os.path.join(hydra.utils.get_original_cwd(), f"../models/checkpoints/{start_timestamp}_{cfg.codename}.pth"))
 
 		X, Y, len_X, len_Y = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='valid', ops=cfg.ops)
 		X, Y = X.to(cfg.device), Y.to(cfg.device)

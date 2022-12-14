@@ -10,7 +10,7 @@ hydra:
 codename: ut
 max_iter: 10000
 bs: 128
-lr: 3e-4
+lr: 1e-4
 gamma: 1
 max_len: 5
 max_nes: 2

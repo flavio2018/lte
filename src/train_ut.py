@@ -5,7 +5,8 @@ import os
 import torch
 import numpy as np
 from model.ut.UniversalTransformer import UniversalTransformer
-from model.test import compute_loss, batch_acc
+from model.ut.ACT import ACT
+from model.test import compute_loss, batch_acc, eval_ut, compute_act_loss
 from data.generator import LTEGenerator
 from tqdm import trange
 import wandb
@@ -22,8 +23,11 @@ def train_ut(cfg):
 	ut = UniversalTransformer(d_model=cfg.d_model,
 							  num_heads=cfg.num_heads,
 							  num_layers=cfg.num_layers,
-							  x_vocab_size=len(lte.x_vocab),
-							  y_vocab_size=len(lte.y_vocab),
+							  generator=lte,
+							  act_enc=ACT(d_model=cfg.d_model,
+							  	  		  max_hop=cfg.num_layers),
+							  act_dec=ACT(d_model=cfg.d_model,
+							  	  		  max_hop=cfg.num_layers),
 							  device=cfg.device).to(cfg.device)
 
 	xent = torch.nn.CrossEntropyLoss(reduction='none')
@@ -39,9 +43,10 @@ def train_ut(cfg):
 	wandb.run.name = cfg.codename
 	wandb.config.update(omegaconf.OmegaConf.to_container(
 		cfg, resolve=True, throw_on_missing=True))
+	wandb.watch(ut, log_freq=FREQ_WANDB_LOG)
 	start_timestamp = dt.now().strftime('%Y-%m-%d_%H-%M')
 
-	for i_step in trange(cfg.max_iter):
+	for i_step in range(cfg.max_iter):
 		X_1h, Y_1h, len_x, len_y = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, ops=cfg.ops)
 		loss_step, acc_step = train_step(ut, (X_1h, Y_1h), lte, xent, opt)
 		
@@ -64,6 +69,7 @@ def train_ut(cfg):
 					'opt': opt.state_dict(),
 					'loss_train': loss_step,
 				}, os.path.join(hydra.utils.get_original_cwd(), f"../models/checkpoints/{start_timestamp}_{cfg.codename}.pth"))
+			eval_ut(ut, X_1h, Y_1h, xent, lte, cfg.device)
 
 		if i_step % FREQ_EVAL == 0:
 			X_1h, Y_1h, len_x, len_y = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, ops=cfg.ops, split='valid')
@@ -79,8 +85,9 @@ def train_step(model, data, generator, loss, opt):
 	model.train()
 	inputs, targets = data
 	
-	outputs = model(inputs, targets[:, :-1])
+	outputs, act = model(inputs, targets[:, :-1])
 	avg_loss = compute_loss(loss, [outputs[:, pos, :] for pos in range(outputs.size(1))], targets[:, 1:], generator)
+	avg_loss += compute_act_loss(outputs, act, inputs, targets[:, 1:], generator)
 	avg_acc = batch_acc([outputs[:, pos, :] for pos in range(outputs.size(1))], targets[:, 1:], targets.size(-1), generator)
 	
 	avg_loss.backward()
@@ -92,8 +99,9 @@ def valid_step(model, data, generator, loss):
 	model.eval()
 	inputs, targets = data
 	
-	outputs = model(inputs, targets[:, :-1])
+	outputs, act = model(inputs, targets[:, :-1])
 	avg_loss = compute_loss(loss, [outputs[:, pos, :] for pos in range(outputs.size(1))], targets[:, 1:], generator)
+	avg_loss += compute_act_loss(outputs, act, inputs, targets[:, 1:], generator)
 	avg_acc = batch_acc([outputs[:, pos, :] for pos in range(outputs.size(1))], targets[:, 1:], targets.size(-1), generator)
 	return avg_loss.item(), avg_acc.item()
 

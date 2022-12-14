@@ -48,10 +48,11 @@ def train_ut(cfg):
 
 	for i_step in range(cfg.max_iter):
 		X_1h, Y_1h, len_x, len_y = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, ops=cfg.ops)
-		loss_step, acc_step = train_step(ut, (X_1h, Y_1h), lte, xent, opt)
-		
+		loss_step, acc_step, act = train_step(ut, (X_1h, Y_1h), lte, xent, opt)
+		R_enc, N_enc, R_dec, N_dec = act
+
 		X_1h, Y_1h, len_x, len_y = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, ops=cfg.ops, split='valid')
-		loss_valid_step, acc_valid_step = valid_step(ut, (X_1h, Y_1h), lte, xent)
+		loss_valid_step, acc_valid_step, _ = valid_step(ut, (X_1h, Y_1h), lte, xent)
 		
 		if i_step % FREQ_WANDB_LOG == 0:
 			wandb.log({
@@ -59,6 +60,8 @@ def train_ut(cfg):
 					"acc": acc_step,
 					"val_loss": loss_valid_step,
 					"val_acc": acc_valid_step,
+					"avg_n_updates_enc": N_enc.mean().item(),
+					"avg_n_updates_dec": N_dec.mean().item(),
 					"update": i_step,
 				})
 		
@@ -73,9 +76,12 @@ def train_ut(cfg):
 
 		if i_step % FREQ_EVAL == 0:
 			X_1h, Y_1h, len_x, len_y = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, ops=cfg.ops, split='valid')
-			_, acc_step_test = valid_step(ut, (X_1h, Y_1h), lte, xent)
+			_, acc_step_test, act = valid_step(ut, (X_1h, Y_1h), lte, xent)
+			R_enc, N_enc, R_dec, N_dec = act
 			wandb.log({
 				"acc_test": acc_step_test,
+				"avg_n_updates_enc_test": N_enc.mean().item(),
+				"avg_n_updates_dec_test": N_dec.mean().item(),
 				"test_update": i_step // FREQ_EVAL,
 			})
 	
@@ -92,7 +98,7 @@ def train_step(model, data, generator, loss, opt):
 	
 	avg_loss.backward()
 	opt.step()
-	return avg_loss.item(), avg_acc.item()
+	return avg_loss.item(), avg_acc.item(), act
 
 
 def valid_step(model, data, generator, loss):
@@ -103,7 +109,7 @@ def valid_step(model, data, generator, loss):
 	avg_loss = compute_loss(loss, [outputs[:, pos, :] for pos in range(outputs.size(1))], targets[:, 1:], generator)
 	avg_loss += compute_act_loss(outputs, act, inputs, targets[:, 1:], generator)
 	avg_acc = batch_acc([outputs[:, pos, :] for pos in range(outputs.size(1))], targets[:, 1:], targets.size(-1), generator)
-	return avg_loss.item(), avg_acc.item()
+	return avg_loss.item(), avg_acc.item(), act
 
 
 if __name__ == '__main__':

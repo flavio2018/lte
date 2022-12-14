@@ -106,6 +106,16 @@ def eval_encdec_dntm_padded(encoder, decoder, final_mlp, padded_samples_batch, p
 	print(batch_acc(outputs, padded_targets_batch[:, 1:, :], len(generator.y_vocab), generator).item())
 	eval_padded(outputs, padded_targets_batch, padded_samples_batch, generator)
 
+def eval_ut(ut, X, Y, loss, generator, device):
+	ut.eval()
+	with torch.no_grad():
+		outputs, act = ut(X, Y[:, :-1])
+	list_outputs = [outputs[:, pos, :] for pos in range(outputs.size(1))]
+	print(compute_loss(loss, list_outputs, Y[:, 1:], generator).item())
+	print(batch_acc(list_outputs, Y[:, 1:], Y.size(-1), generator).item())
+	eval_padded(list_outputs, Y, X, generator)
+
+
 def compute_loss(loss, outputs, target, generator):
 	# for b in range(32):
 	# 	print(f"{b} output: {''.join([target_tensors_to_str([o[b, :] for o in outputs])])}")
@@ -130,6 +140,20 @@ def compute_loss(loss, outputs, target, generator):
 	# print()
 	return avg_loss
 
+
+def compute_act_loss(outputs, act, inputs, target, generator):
+	R_enc, N_enc, R_dec, N_dec = act
+	idx_pad_x = generator.x_vocab["#"]
+	idx_pad_y = generator.y_vocab["#"]
+	idx_inputs = inputs.argmax(dim=-1)
+	idx_targets = target.argmax(dim=-1)
+	mask_x = (idx_inputs != idx_pad_x).type(torch.int32)
+	mask_y = (idx_targets != idx_pad_y).type(torch.int32)
+
+	rho_enc = (R_enc + N_enc) * mask_x
+	rho_dec = (R_dec + N_dec) * mask_y
+	return (rho_enc.mean() + rho_dec.mean()).mean()
+	
 
 def batch_acc(outputs, targets, vocab_size, generator):
 	idx_pad = generator.y_vocab[_PAD]

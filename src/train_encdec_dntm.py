@@ -3,9 +3,8 @@
 from model.dntm.DynamicNeuralTuringMachine import DynamicNeuralTuringMachine as DNTM
 from model.dntm.DynamicNeuralTuringMachineMemory import DynamicNeuralTuringMachineMemory as DNTMMem
 from model.mlp import MLP
-from model.test import eval_encdec_dntm_padded, compute_loss, encdec_dntm_step, get_num_unequal
-from data.generator import get_vocab_size, get_target_vocab_size, generate_batch
-from utils.rnn_utils import batch_acc
+from model.test import eval_encdec_dntm_padded, compute_loss, batch_acc, encdec_dntm_step, get_len_stats
+from data.generator import LTEGenerator
 from utils.wandb_utils import log_weights_gradient, log_params_norm, log_intermediate_values_norm
 import numpy as np
 import torch
@@ -21,19 +20,21 @@ FREQ_EVAL = 10
 def train_encdec(cfg):
 	print(omegaconf.OmegaConf.to_yaml(cfg))
 	
+	lte = LTEGenerator(device=cfg.device)
+	
 	encoder = DNTM(
 		memory=DNTMMem(
 			n_locations=cfg.mem_size,
 			content_size=cfg.content_size,
 			address_size=cfg.address_size,
-			controller_input_size=get_vocab_size(),
+			controller_input_size=len(lte.x_vocab),
 			controller_hidden_state_size=cfg.hid_size,
 			batch_size=cfg.bs,
 		),
 		controller_hidden_state_size=cfg.hid_size,
-		controller_input_size=get_vocab_size(),
+		controller_input_size=len(lte.x_vocab),
 		batch_size=cfg.bs,
-		controller_output_size=get_vocab_size(),
+		controller_output_size=len(lte.x_vocab),
 	).to(cfg.device)
 
 	decoder = DNTM(
@@ -41,21 +42,21 @@ def train_encdec(cfg):
 			n_locations=cfg.mem_size,
 			content_size=cfg.content_size,
 			address_size=cfg.address_size,
-			controller_input_size=get_target_vocab_size(),
+			controller_input_size=len(lte.y_vocab),
 			controller_hidden_state_size=cfg.hid_size,
 			batch_size=cfg.bs,
 		),
 		controller_hidden_state_size=cfg.hid_size,
-		controller_input_size=get_target_vocab_size(),
+		controller_input_size=len(lte.y_vocab),
 		batch_size=cfg.bs,
-		controller_output_size=get_target_vocab_size(),
+		controller_output_size=len(lte.y_vocab),
 	).to(cfg.device)
 
 	final_mlp = MLP(
 		depth=4,
-		input_width=get_target_vocab_size(),
+		input_width=len(lte.y_vocab),
 		hidden_width=256,
-		output_width=get_target_vocab_size(),
+		output_width=len(lte.y_vocab),
 	).to(cfg.device)
 
 	enc_dec_parameters = [p for p in encoder.parameters()] + [p for p in decoder.parameters()] + [p for p in final_mlp.parameters()]
@@ -77,16 +78,16 @@ def train_encdec(cfg):
 		cfg, resolve=True, throw_on_missing=True))
 	
 	for i_step in range(cfg.max_iter):
-		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, ops=cfg.ops)
+		padded_samples_batch, padded_targets_batch, samples_len, targets_len = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, ops=cfg.ops)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
-		loss_step, acc_step = train_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, opt, cfg.device)
+		loss_step, acc_step = train_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, opt, lte, cfg.device)
 		
-		if i_step % 100 == 0:
-			eval_encdec_dntm_padded(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
+		if i_step % max(1000, FREQ_WANDB_LOG) == 0:
+			eval_encdec_dntm_padded(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, lte, cfg.device)
 
-		padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='valid', ops=cfg.ops)
+		padded_samples_batch, padded_targets_batch, samples_len, targets_len = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='valid', ops=cfg.ops)
 		padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
-		loss_valid_step, acc_valid_step, _ = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
+		loss_valid_step, acc_valid_step, _ = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, lte, cfg.device)
 		
 		if i_step % FREQ_WANDB_LOG == 0:
 			wandb.log({
@@ -112,9 +113,9 @@ def train_encdec(cfg):
 			lr_scheduler.step()
 		
 		if i_step % FREQ_EVAL == 0:
-			padded_samples_batch, padded_targets_batch, samples_len, targets_len = generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='test', ops=cfg.ops)
+			padded_samples_batch, padded_targets_batch, samples_len, targets_len = lte.generate_batch(cfg.max_len, cfg.max_nes, cfg.bs, split='test', ops=cfg.ops)
 			padded_samples_batch, padded_targets_batch = padded_samples_batch.to(cfg.device), padded_targets_batch.to(cfg.device)
-			_, acc_test, len_stats = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, cfg.device)
+			_, acc_test, len_stats = valid_step(encoder, decoder, final_mlp, padded_samples_batch, padded_targets_batch, samples_len, targets_len, loss, lte, cfg.device)
 			num_unequal, num_longer, num_shorter, avg_len_diff = len_stats
 			wandb.log({
 				"acc_test": acc_test,
@@ -127,14 +128,14 @@ def train_encdec(cfg):
 		
 
 
-def train_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, loss, opt, device):
+def train_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, loss, opt, generator, device):
 	opt.zero_grad()
 	encoder.train()
 	decoder.train()
 
 	outputs = encdec_dntm_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, device)
-	avg_loss = compute_loss(loss, outputs, target[:, 1:, :])
-	acc = batch_acc(outputs, target[:, 1:, :], get_target_vocab_size())  # cut SOS
+	avg_loss = compute_loss(loss, outputs, target[:, 1:, :], generator)
+	acc = batch_acc(outputs, target[:, 1:, :], target.size(-1), generator)  # cut SOS
 
 	avg_loss.backward()
 	opt.step()
@@ -145,14 +146,14 @@ def train_step(encoder, decoder, final_mlp, sample, target, samples_len, targets
 
 
 @torch.no_grad()
-def valid_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, loss, device):
+def valid_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, loss, generator, device):
 	encoder.eval()
 	decoder.eval()
 
 	outputs = encdec_dntm_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, device)
-	avg_loss = compute_loss(loss, outputs, target[:, 1:, :])
-	acc = batch_acc(outputs, target[:, 1:, :], get_target_vocab_size())
-	len_stats = get_num_unequal(outputs, target[:, 1:, :])
+	avg_loss = compute_loss(loss, outputs, target[:, 1:, :], generator)
+	acc = batch_acc(outputs, target[:, 1:, :], target.size(-1), generator)
+	len_stats = get_len_stats(outputs, target[:, 1:, :])
 	
 	encoder.detach_states()
 	decoder.detach_states()

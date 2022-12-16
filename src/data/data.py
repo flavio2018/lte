@@ -109,7 +109,7 @@ class ForLoop:
         op = "+=" if self.sum else "-="
         valueless_code = self.accumulator_code + "=" + str(self.accumulator_value) + \
                         "for[" + str(self.num_loops) + "]" + \
-                        self.accumulator_code + op + codes[0]
+                        self.accumulator_code + op + codes[0] + ';'
         return self.accumulator_code, valueless_code
 
 

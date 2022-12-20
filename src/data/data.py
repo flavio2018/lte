@@ -30,6 +30,7 @@ class Subtraction:
 class Multiplication:
     def __init__(self):
         self.operands = 2
+        self.used_params = 0
     
     def evaluate(self, values):
         op1, op2 = values
@@ -61,7 +62,7 @@ class IfStatement:
         self.geq = True
         
     def evaluate(self, values):
-        op1, op2, res1, res2 = values
+        res1, res2, op1, op2 = values
         self.geq = True if np.random.rand() > 0.5 else False
         if self.geq:
             if op1 > op2:
@@ -75,56 +76,43 @@ class IfStatement:
                 return res2
         
     def generate_code(self, codes):
-        code_op1, code_op2, code_res1, code_res2 = codes
+        code_res1, code_res2, code_op1, code_op2 = codes
         op = ">" if self.geq else "<"
         return "(" + code_res1 + "if" + code_op1 + op + code_op2 + "else" + code_res2 + ")"
 
 
 class ForLoop:
-    def __init__(self, used_letters, length):
+    def __init__(self, length):
         self.operands = 1
-        self.sum = True
         self.length = length
-        self.used_letters = used_letters
         
     def _set_accumulator(self):
-        letter = np.random.randint(len(self.used_letters))
-        self.accumulator_code = self.used_letters.pop(letter)
+        self.accumulator_code = 'x'
         self.accumulator_value = np.random.randint(10**self.length)
         
     def evaluate(self, values):
         self._set_accumulator()
-        self.num_loops = np.random.randint(4*self.length)
-        self.sum = True if np.random.rand() > 0.5 else False
-        accumulator = self.accumulator_value
-        if self.sum:
-            for l in range(self.num_loops):
-                accumulator += values[0]
-        else:
-            for l in range(self.num_loops):
-                accumulator -= values[0]
+        self.num_loops = np.random.randint(1, 10)
+        accumulator = values[0] 
+        for l in range(self.num_loops):
+            accumulator += self.accumulator_value
         return accumulator
     
     def generate_code(self, codes):
-        op = "+=" if self.sum else "-="
-        valueless_code = self.accumulator_code + "=" + str(self.accumulator_value) + \
-                        "for[" + str(self.num_loops) + "]" + \
-                        self.accumulator_code + op + codes[0] + ';'
-        return self.accumulator_code, valueless_code
+        return "(x=" + codes[0] + "for[" + str(self.num_loops) + "]" + "x+=" + str(self.accumulator_value) + ")"
 
 
 def generate_sample(length, nesting, split='train', ops='asmif'):
     program_split = ''
     
     while(program_split != split):
-        used_letters = list("abcdefghijklmnopqrstuvwxyz")
         stack = []
         ops_dict = {
             "a": Addition(),
             "s": Subtraction(),
             "m": Multiplication(),
             "i": IfStatement(),
-            "f": ForLoop(used_letters, length),
+            "f": ForLoop(length),
         }
         # ops = [Addition(), Subtraction(), Multiplication()] #, Assignment(used_letters), IfStatement(), ForLoop(used_letters, length)]
         ops_subset = [v for k, v in ops_dict.items() if k in ops]
@@ -139,19 +127,16 @@ def generate_sample(length, nesting, split='train', ops='asmif'):
                 if stack:
                     value, code = stack.pop()
                 else:
-                    if isinstance(op, Multiplication) and param == 0:  # for the first parameter of multiplication
+                    if isinstance(op, Multiplication) and op.used_params == 0:  # for the first parameter of multiplication
                         value = np.random.randint(4*(length-1), 4*length)
+                        op.used_params += 1
                     else:
                         value = np.random.randint(10**(length-1), 10**length)
                     code = str(value)
                 values.append(value)
                 codes.append(code)
             new_value = op.evaluate(values)
-            if isinstance(op, Assignment) or isinstance(op, ForLoop):
-                new_code, valueless_code = op.generate_code(codes)
-                program += valueless_code
-            else:
-                new_code = op.generate_code(codes)
+            new_code = op.generate_code(codes)
             stack.append((new_value, new_code))
         final_value, final_code = stack.pop()
         program += final_code[1:-1]

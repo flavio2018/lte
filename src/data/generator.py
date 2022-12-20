@@ -14,7 +14,7 @@ _PAD = '#'
 
 class LTEGenerator:
     def __init__(self, device):
-        x_vocab_chars = string.ascii_lowercase + string.digits + '()%+*-=<>[]:; '
+        x_vocab_chars = string.ascii_lowercase + string.digits + '()%+*-=<>[]: '
         y_vocab_chars = string.digits + '-'
         self.x_vocab = vocab(
             OrderedDict([(c, 1) for c in x_vocab_chars]),

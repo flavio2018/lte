@@ -93,7 +93,7 @@ def train_step(model, data, generator, loss, opt):
 	
 	outputs, act = model(inputs, targets[:, :-1])
 	avg_loss = compute_loss(loss, [outputs[:, pos, :] for pos in range(outputs.size(1))], targets[:, 1:], generator)
-	avg_loss += 0.5*compute_act_loss(outputs, act, inputs, targets[:, 1:], generator)
+	avg_loss += 0.01*compute_act_loss(outputs, act, inputs, targets[:, 1:], generator)
 	avg_acc = batch_acc([outputs[:, pos, :] for pos in range(outputs.size(1))], targets[:, 1:], targets.size(-1), generator)
 	
 	avg_loss.backward()
@@ -107,7 +107,7 @@ def valid_step(model, data, generator, loss):
 	
 	outputs, act = model(inputs, targets[:, :-1])
 	avg_loss = compute_loss(loss, [outputs[:, pos, :] for pos in range(outputs.size(1))], targets[:, 1:], generator)
-	avg_loss += 0.5*compute_act_loss(outputs, act, inputs, targets[:, 1:], generator)
+	avg_loss += 0.01*compute_act_loss(outputs, act, inputs, targets[:, 1:], generator)
 	avg_acc = batch_acc([outputs[:, pos, :] for pos in range(outputs.size(1))], targets[:, 1:], targets.size(-1), generator)
 	return avg_loss.item(), avg_acc.item(), act
 

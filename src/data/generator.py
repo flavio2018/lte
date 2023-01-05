@@ -35,13 +35,22 @@ class LTEGenerator:
                                nesting=torch.randint(1, max_nesting+1, (1,)).item(),
                                split=split,
                                ops=ops)
+
+    def _generate_sample_naive(self, length, nesting, split, ops, batch_size):
+        return generate_sample(length=length,
+                               nesting=nesting,
+                               split=split,
+                               ops=ops)
     
     def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif'):
         samples, targets = [], []
         samples_len, targets_len = [], []
 
         for _ in range(batch_size):
-            x, y = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
+            if split == 'test':
+                x, y = self._generate_sample_naive(max_length, max_nesting, split, ops, batch_size)
+            else:
+                x, y = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
             samples.append(list(x))
             targets.append([_SOS] + list(y) + [_EOS])
             samples_len.append(len(samples[-1]))

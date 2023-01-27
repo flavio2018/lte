@@ -121,6 +121,8 @@ def compute_loss(loss, outputs, target, generator):
 	# 	print(f"{b} output: {''.join([target_tensors_to_str([o[b, :] for o in outputs])])}")
 	# 	print(f"{b} target: {target_tensors_to_str(target[b, :, :])}")
 	# print("-")
+	if not isinstance(outputs, list):
+		outputs = [outputs[:, pos, :] for pos in range(outputs.size(1))]
 	cumulative_loss = 0
 	idx_pad = generator.y_vocab[_PAD]
 	idx_targets = target.argmax(dim=-1)
@@ -159,8 +161,9 @@ def batch_acc(outputs, targets, vocab_size, generator):
 	idx_pad = generator.y_vocab[_PAD]
 	idx_targets = targets.argmax(dim=-1)
 	mask = (idx_targets != idx_pad).type(torch.int32)
-	tensor_outs = torch.concat([o.unsqueeze(1) for o in outputs], dim=1)
-	idx_outs = tensor_outs.argmax(dim=-1)
+	if isinstance(outputs, list):
+		outputs = torch.concat([o.unsqueeze(1) for o in outputs], dim=1)
+	idx_outs = outputs.argmax(dim=-1)
 	out_equal_target = (idx_outs == idx_targets).type(torch.int32)
 	masked_out_equal_target = out_equal_target * mask
 	num_masked = (mask == 0).sum()

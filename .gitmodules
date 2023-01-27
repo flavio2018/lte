@@ -8,3 +8,6 @@
 [submodule "src/model/ut"]
 	path = src/model/ut
 	url = git@github.com:flavio2018/ut.git
+[submodule "src/archies"]
+	path = src/archies
+	url = https://github.com/flavio2018/archies.git

@@ -1,0 +1,21 @@
+defaults:
+        - override hydra/hydra_logging: none
+        - override hydra/job_logging: custom
+        - _self_
+
+hydra:
+  run:
+    dir: ../hydra/${hydra.job.name}/${now:%Y-%B-%d_%H-%M-%S}
+
+codename: ut_ood
+max_iter: 10000
+bs: 128
+lr: 1e-4
+max_len: 5
+max_nes: 2
+d_model: 256
+num_heads: 4
+num_layers: 6
+masked: false
+device: 'cuda'
+ops: 'asmif'

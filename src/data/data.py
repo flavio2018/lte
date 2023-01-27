@@ -1,4 +1,5 @@
 import numpy as np
+import re
 
 
 class Addition:
@@ -102,7 +103,7 @@ class ForLoop:
         return "(x=" + codes[0] + "for[" + str(self.num_loops) + "]" + "x+=" + str(self.accumulator_value) + ")"
 
 
-def generate_sample(length, nesting, split='train', ops='asmif'):
+def generate_sample(length, nesting, split='train', ops='asmif', steps=False):
     program_split = ''
     
     while(program_split != split):
@@ -117,6 +118,7 @@ def generate_sample(length, nesting, split='train', ops='asmif'):
         # ops = [Addition(), Subtraction(), Multiplication()] #, Assignment(used_letters), IfStatement(), ForLoop(used_letters, length)]
         ops_subset = [v for k, v in ops_dict.items() if k in ops]
         program = ''
+        intermediate_values = []
         
         for i in range(nesting):
             op = ops_subset[np.random.randint(len(ops_subset))]
@@ -138,6 +140,7 @@ def generate_sample(length, nesting, split='train', ops='asmif'):
             new_value = op.evaluate(values)
             new_code = op.generate_code(codes)
             stack.append((new_value, new_code))
+            intermediate_values.append(new_value)           
         final_value, final_code = stack.pop()
         program += final_code[1:-1]
 
@@ -149,4 +152,16 @@ def generate_sample(length, nesting, split='train', ops='asmif'):
         else:
             program_split = 'test'
 
-    return program, str(final_value)
+    solution_steps = get_solution_steps(new_code, intermediate_values)
+
+    if steps:
+        return program, str(final_value), solution_steps, [str(v) for v in intermediate_values]
+    else:
+        return program, str(final_value)
+
+
+def get_solution_steps(code, values):
+    solution_steps = [code]
+    for value in values:
+        solution_steps.append(re.sub(r'[(][a-z0-9+*\-:=<>\[\] ]+[)]', str(value), solution_steps[-1], count=1))
+    return solution_steps

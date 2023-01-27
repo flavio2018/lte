@@ -153,7 +153,7 @@ class LTEStepsGenerator(LTEGenerator):
     def _get_subexp_mask(self, x_start_end, samples):
         tokenized_samples = self.x_vocab_trans(samples)
         batch = self.x_to_tensor_trans(tokenized_samples).to(self.device)
-        mask = torch.ones((batch.size(0), batch.size(1)), device=self.device)
+        mask = torch.ones((batch.size(0), batch.size(1)))
         for row, (start, end) in enumerate(x_start_end):
             mask[row, start:end] -= 1
-        return mask.type(torch.BoolTensor)
+        return mask.type(torch.BoolTensor).to(self.device)

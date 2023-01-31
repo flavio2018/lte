@@ -70,6 +70,9 @@ def train_step(model, lte, max_length, max_nesting, batch_size, opt, xent, maske
     X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, batch_size=batch_size)
     if not masked:
         mask = None
+    x_idx = x.argmax(-1)
+    padded_x = torch.where(~mask, x_idx, lte.x_vocab['#'])
+    X = torch.nn.functional.one_hot(padded_x, num_classes=len(lte.x_vocab)).type(torch.float)
     
     outputs = model(X, Y[:, :-1], mask)
     loss = compute_loss(xent, outputs, Y[:, 1:], lte)

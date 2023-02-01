@@ -41,8 +41,8 @@ def train_ood(cfg):
     start_timestamp = dt.now().strftime('%Y-%m-%d_%H-%M')
 
     for it in range(cfg.max_iter):
-        loss_step, acc_step = train_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, opt, xent, masked=cfg.masked)
-        loss_valid_step, acc_valid_step = valid_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, xent, masked=cfg.masked)
+        loss_step, acc_step = train_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, opt, xent, masked=cfg.masked, tf=cfg.tf)
+        loss_valid_step, acc_valid_step = valid_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf)
 
         if it % FREQ_WANDB_LOG == 0:
             wandb.log({
@@ -62,7 +62,7 @@ def train_ood(cfg):
                 }, os.path.join(hydra.utils.get_original_cwd(), f"../models/checkpoints/{start_timestamp}_{cfg.codename}.pth"))
             
 
-def train_step(model, lte, max_length, max_nesting, batch_size, opt, xent, masked=False):
+def train_step(model, lte, max_length, max_nesting, batch_size, opt, xent, masked=False, tf=False):
     model.train()
     opt.zero_grad()
     mask = None
@@ -74,7 +74,10 @@ def train_step(model, lte, max_length, max_nesting, batch_size, opt, xent, maske
     # padded_x = torch.where(~mask, x_idx, lte.x_vocab['#'])
     # X = torch.nn.functional.one_hot(padded_x, num_classes=len(lte.x_vocab)).type(torch.float)
     
-    outputs = model(X, Y[:, :-1], mask)
+    if tf:
+        outputs = model(X, Y[:, :-1], mask)
+    else:
+        outputs = model(X, usr_src_mask=mask)
     loss = compute_loss(xent, outputs, Y[:, 1:], lte)
     # loss += 0.01*compute_act_loss(outputs, act, X, Y[:, 1:], lte)
     acc = batch_acc(outputs, Y[:, 1:], Y.size(-1), lte)
@@ -84,7 +87,7 @@ def train_step(model, lte, max_length, max_nesting, batch_size, opt, xent, maske
     return loss.item(), acc.item()
 
 
-def valid_step(model, lte, max_length, max_nesting, batch_size, xent, masked=False):
+def valid_step(model, lte, max_length, max_nesting, batch_size, xent, masked=False, tf=False):
     model.eval()
     mask = None
 
@@ -92,7 +95,10 @@ def valid_step(model, lte, max_length, max_nesting, batch_size, xent, masked=Fal
     if not masked:
         mask = None
     
-    outputs = model(X, Y[:, :-1], mask)
+    if tf:
+        outputs = model(X, Y[:, :-1], mask)
+    else:
+        outputs = model(X, usr_src_mask=mask)
     loss = compute_loss(xent, outputs, Y[:, 1:], lte)
     # loss += 0.01*compute_act_loss(outputs, act, X, Y[:, 1:], lte)
     acc = batch_acc(outputs, Y[:, 1:], Y.size(-1), lte)

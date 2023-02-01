@@ -105,7 +105,7 @@ class LTEStepsGenerator(LTEGenerator):
                                ops=ops,
                                steps=True)
 
-    def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', start_to_end=False):
+    def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', start_to_end=False, simplify=False):
 
         samples, targets = [], []
         samples_len, targets_len = [], []
@@ -116,12 +116,17 @@ class LTEStepsGenerator(LTEGenerator):
                 _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops, batch_size)
                 if start_to_end:
                     x, y = steps[0], values[-1]
+                elif simplify:
+                    x, y = steps[0], steps[1]
                 else:
                     x, y = steps[0], values[0]
             else:
                 _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
                 rand_idx = torch.randint(0, len(steps)-1, (1,)).item()
-                x, y = steps[rand_idx], values[rand_idx]
+                if simplify:
+                    x, y = steps[rand_idx], steps[rand_idx+1]
+                else:
+                    x, y = steps[rand_idx], values[rand_idx]
             subexpr_start_end += [self._get_start_end_expr(x)]
             samples.append(list(x))
             targets.append([_SOS] + list(y) + [_EOS])

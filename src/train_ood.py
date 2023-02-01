@@ -74,10 +74,7 @@ def train_step(model, lte, max_length, max_nesting, batch_size, opt, xent, maske
     # padded_x = torch.where(~mask, x_idx, lte.x_vocab['#'])
     # X = torch.nn.functional.one_hot(padded_x, num_classes=len(lte.x_vocab)).type(torch.float)
     
-    if tf:
-        outputs = model(X, Y[:, :-1], mask)
-    else:
-        outputs = model(X, usr_src_mask=mask)
+    outputs = model(X, Y[:, :-1], mask, tf=tf)
     loss = compute_loss(xent, outputs, Y[:, 1:], lte)
     # loss += 0.01*compute_act_loss(outputs, act, X, Y[:, 1:], lte)
     acc = batch_acc(outputs, Y[:, 1:], Y.size(-1), lte)
@@ -95,10 +92,7 @@ def valid_step(model, lte, max_length, max_nesting, batch_size, xent, masked=Fal
     if not masked:
         mask = None
     
-    if tf:
-        outputs = model(X, Y[:, :-1], mask)
-    else:
-        outputs = model(X, usr_src_mask=mask)
+    outputs = model(X, Y[:, :-1], mask, tf=tf)
     loss = compute_loss(xent, outputs, Y[:, 1:], lte)
     # loss += 0.01*compute_act_loss(outputs, act, X, Y[:, 1:], lte)
     acc = batch_acc(outputs, Y[:, 1:], Y.size(-1), lte)

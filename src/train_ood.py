@@ -41,8 +41,8 @@ def train_ood(cfg):
     start_timestamp = dt.now().strftime('%Y-%m-%d_%H-%M')
 
     for it in range(cfg.max_iter):
-        loss_step, acc_step = train_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, opt, xent, masked=cfg.masked, tf=cfg.tf)
-        loss_valid_step, acc_valid_step = valid_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf)
+        loss_step, acc_step = train_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, opt, xent, masked=cfg.masked, tf=cfg.tf, simplify=cfg.simplify)
+        loss_valid_step, acc_valid_step = valid_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, simplify=cfg.simplify)
 
         if it % FREQ_WANDB_LOG == 0:
             wandb.log({
@@ -62,12 +62,12 @@ def train_ood(cfg):
                 }, os.path.join(hydra.utils.get_original_cwd(), f"../models/checkpoints/{start_timestamp}_{cfg.codename}.pth"))
             
 
-def train_step(model, lte, max_length, max_nesting, batch_size, opt, xent, masked=False, tf=False):
+def train_step(model, lte, max_length, max_nesting, batch_size, opt, xent, masked=False, tf=False, simplify=False):
     model.train()
     opt.zero_grad()
     mask = None
 
-    X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, batch_size=batch_size, simplify=True)
+    X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, batch_size=batch_size, simplify=simplify)
     if not masked:
         mask = None
     # x_idx = X.argmax(-1)
@@ -84,11 +84,11 @@ def train_step(model, lte, max_length, max_nesting, batch_size, opt, xent, maske
     return loss.item(), acc.item()
 
 
-def valid_step(model, lte, max_length, max_nesting, batch_size, xent, masked=False, tf=False):
+def valid_step(model, lte, max_length, max_nesting, batch_size, xent, masked=False, tf=False, simplify=False):
     model.eval()
     mask = None
 
-    X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, batch_size=batch_size, split='valid', simplify=True)
+    X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, batch_size=batch_size, split='valid', simplify=simplify)
     if not masked:
         mask = None
     

@@ -14,7 +14,10 @@ import wandb
 @hydra.main(config_path="../conf/local", config_name="train_ood")
 def train_ood(cfg):
     print(omegaconf.OmegaConf.to_yaml(cfg))
-    lte_step = LTEStepsGenerator(cfg.device)
+    if cfg.step_generator:
+        lte = LTEStepsGenerator(cfg.device)
+    else:
+        lte = LTEGenerator(cfg.device)
 
     ut = UniversalTransformer(
         d_model=cfg.d_model,

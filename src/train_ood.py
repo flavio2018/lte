@@ -7,7 +7,7 @@ import numpy as np
 from model.ut.UniversalTransformer import UniversalTransformer
 from model.ut.ACT import ACT
 from model.test import compute_loss, batch_acc, compute_act_loss
-from data.generator import LTEStepsGenerator
+from data.generator import LTEGenerator, LTEStepsGenerator
 import wandb
 
 

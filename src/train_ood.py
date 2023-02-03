@@ -88,7 +88,11 @@ def train_step(model, lte, max_length, max_nesting, lte_kwargs, opt, xent, maske
     opt.zero_grad()
     mask = None
 
-    X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
+    if isinstance(lte, LTEStepsGenerator):
+        X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
+    else:
+        X, Y, lenX, lenY = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
+
     if not masked:
         mask = None
     # x_idx = X.argmax(-1)
@@ -108,7 +112,11 @@ def train_step(model, lte, max_length, max_nesting, lte_kwargs, opt, xent, maske
 def valid_step(model, lte, max_length, max_nesting, lte_kwargs, xent, masked=False, tf=False):
     model.eval()
 
-    X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
+    if isinstance(lte, LTEStepsGenerator):
+        X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
+    else:
+        X, Y, lenX, lenY = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
+
     if not masked:
         mask = None
     

@@ -46,7 +46,7 @@ def train_ood(cfg):
 
         if it % FREQ_WANDB_LOG == 0:
             loss_valid_step, acc_valid_step = valid_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, simplify=cfg.simplify)
-            loss_ood, acc_ood = valid_step(ut, lte_step, cfg.max_len, cfg.max_nes+2, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, split='test', simplify=cfg.simplify)
+            loss_ood, acc_ood = valid_step(ut, lte_step, cfg.max_len+2, cfg.max_nes, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, split='test', simplify=cfg.simplify)
 
             wandb.log({
                     "loss": loss_step,

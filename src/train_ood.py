@@ -16,8 +16,17 @@ def train_ood(cfg):
     print(omegaconf.OmegaConf.to_yaml(cfg))
     if cfg.step_generator:
         lte = LTEStepsGenerator(cfg.device)
+        lte_kwargs = {
+            "batch_size": cfg.bs,
+            "simplify": cfg.simplify,
+            "split": "train",
+        }
     else:
         lte = LTEGenerator(cfg.device)
+        lte_kwargs = {
+            "batch_size": cfg.bs,
+            "split": "train",
+        }
 
     ut = UniversalTransformer(
         d_model=cfg.d_model,
@@ -45,12 +54,15 @@ def train_ood(cfg):
     start_timestamp = dt.now().strftime('%Y-%m-%d_%H-%M')
 
     for it in range(cfg.max_iter):
-        loss_step, acc_step = train_step(ut, lte, cfg.max_len, cfg.max_nes, cfg.bs, opt, xent, masked=cfg.masked, tf=cfg.tf, simplify=cfg.simplify)
+        lte_kwargs['split']='train'    
+        loss_step, acc_step = train_step(ut, lte, cfg.max_len, cfg.max_nes, lte_kwargs, opt, xent, masked=cfg.masked, tf=cfg.tf)
 
         if it % FREQ_WANDB_LOG == 0:
-            loss_valid_step, acc_valid_step = valid_step(ut, lte, cfg.max_len, cfg.max_nes, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, simplify=cfg.simplify)
-            loss_ood_len, acc_ood_len = valid_step(ut, lte, cfg.max_len+2, cfg.max_nes, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, split='test', simplify=cfg.simplify)
-            loss_ood_nes, acc_ood_nes = valid_step(ut, lte, cfg.max_len, cfg.max_nes+2, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, split='test', simplify=cfg.simplify)
+            lte_kwargs['split']='valid'
+            loss_valid_step, acc_valid_step = valid_step(ut, lte, cfg.max_len, cfg.max_nes, lte_kwargs, xent, masked=cfg.masked, tf=cfg.tf)
+            lte_kwargs['split']='test'
+            loss_ood_len, acc_ood_len = valid_step(ut, lte, cfg.max_len+2, cfg.max_nes, lte_kwargs, xent, masked=cfg.masked, tf=cfg.tf)
+            loss_ood_nes, acc_ood_nes = valid_step(ut, lte, cfg.max_len, cfg.max_nes+2, lte_kwargs, xent, masked=cfg.masked, tf=cfg.tf)
 
             wandb.log({
                     "loss": loss_step,
@@ -71,12 +83,12 @@ def train_ood(cfg):
                 }, os.path.join(hydra.utils.get_original_cwd(), f"../models/checkpoints/{start_timestamp}_{cfg.codename}.pth"))
             
 
-def train_step(model, lte, max_length, max_nesting, batch_size, opt, xent, masked=False, tf=False, simplify=False):
+def train_step(model, lte, max_length, max_nesting, lte_kwargs, opt, xent, masked=False, tf=False):
     model.train()
     opt.zero_grad()
     mask = None
 
-    X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, batch_size=batch_size, simplify=simplify)
+    X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
     if not masked:
         mask = None
     # x_idx = X.argmax(-1)
@@ -93,10 +105,10 @@ def train_step(model, lte, max_length, max_nesting, batch_size, opt, xent, maske
     return loss.item(), acc.item()
 
 
-def valid_step(model, lte, max_length, max_nesting, batch_size, xent, masked=False, tf=False, split='valid', simplify=False):
+def valid_step(model, lte, max_length, max_nesting, lte_kwargs, xent, masked=False, tf=False):
     model.eval()
 
-    X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, batch_size=batch_size, split=split, simplify=simplify)
+    X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
     if not masked:
         mask = None
     

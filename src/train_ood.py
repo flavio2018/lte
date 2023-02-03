@@ -28,7 +28,7 @@ def train_ood(cfg):
     ).to(cfg.device)
     xent = torch.nn.CrossEntropyLoss(reduction="none")
     opt = torch.optim.Adam(ut.parameters(), lr=cfg.lr)
-    FREQ_WANDB_LOG = np.ceil(cfg.max_iter / 100000)
+    FREQ_WANDB_LOG = np.ceil(cfg.max_iter / 1000)
     wandb.init(
         project="lte",
         entity="flapetr",
@@ -42,14 +42,18 @@ def train_ood(cfg):
 
     for it in range(cfg.max_iter):
         loss_step, acc_step = train_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, opt, xent, masked=cfg.masked, tf=cfg.tf, simplify=cfg.simplify)
-        loss_valid_step, acc_valid_step = valid_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, simplify=cfg.simplify)
 
         if it % FREQ_WANDB_LOG == 0:
+            loss_valid_step, acc_valid_step = valid_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, simplify=cfg.simplify)
+            loss_ood, acc_ood = valid_step(ut, lte_step, cfg.max_len, cfg.max_nes+2, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, split='test', simplify=cfg.simplify)
+
             wandb.log({
                     "loss": loss_step,
                     "acc": acc_step,
                     "val_loss": loss_valid_step,
                     "val_acc": acc_valid_step,
+                    "ood_loss": loss_ood,
+                    "ood_acc": acc_ood,
                     "update": it,
                 })    
 
@@ -84,11 +88,10 @@ def train_step(model, lte, max_length, max_nesting, batch_size, opt, xent, maske
     return loss.item(), acc.item()
 
 
-def valid_step(model, lte, max_length, max_nesting, batch_size, xent, masked=False, tf=False, simplify=False):
+def valid_step(model, lte, max_length, max_nesting, batch_size, xent, masked=False, tf=False, split='valid', simplify=False):
     model.eval()
-    mask = None
 
-    X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, batch_size=batch_size, split='valid', simplify=simplify)
+    X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, batch_size=batch_size, split=split, simplify=simplify)
     if not masked:
         mask = None
     

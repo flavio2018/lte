@@ -25,6 +25,7 @@ def train_ood(cfg):
     #                 max_hop=num_layers),
     #     act_dec=ACT(d_model=d_model,
     #                 max_hop=num_layers),
+        label_pe=cfg.label_pe,
     ).to(cfg.device)
     xent = torch.nn.CrossEntropyLoss(reduction="none")
     opt = torch.optim.Adam(ut.parameters(), lr=cfg.lr)

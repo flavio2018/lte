@@ -19,5 +19,6 @@ num_layers: 6
 masked: false
 tf: false
 simplify: false
+label_pe: false
 device: 'cuda'
 ops: 'asmif'

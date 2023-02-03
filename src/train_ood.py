@@ -23,7 +23,7 @@ def train_ood(cfg):
         d_model=cfg.d_model,
         num_heads=cfg.num_heads,
         num_layers=cfg.num_layers,
-        generator=lte_step,
+        generator=lte,
     #     act_enc=ACT(d_model=d_model,
     #                 max_hop=num_layers),
     #     act_dec=ACT(d_model=d_model,
@@ -45,19 +45,20 @@ def train_ood(cfg):
     start_timestamp = dt.now().strftime('%Y-%m-%d_%H-%M')
 
     for it in range(cfg.max_iter):
-        loss_step, acc_step = train_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, opt, xent, masked=cfg.masked, tf=cfg.tf, simplify=cfg.simplify)
+        loss_step, acc_step = train_step(ut, lte, cfg.max_len, cfg.max_nes, cfg.bs, opt, xent, masked=cfg.masked, tf=cfg.tf, simplify=cfg.simplify)
 
         if it % FREQ_WANDB_LOG == 0:
-            loss_valid_step, acc_valid_step = valid_step(ut, lte_step, cfg.max_len, cfg.max_nes, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, simplify=cfg.simplify)
-            loss_ood, acc_ood = valid_step(ut, lte_step, cfg.max_len, cfg.max_nes+2, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, split='test', simplify=cfg.simplify)
+            loss_valid_step, acc_valid_step = valid_step(ut, lte, cfg.max_len, cfg.max_nes, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, simplify=cfg.simplify)
+            loss_ood_len, acc_ood_len = valid_step(ut, lte, cfg.max_len+2, cfg.max_nes, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, split='test', simplify=cfg.simplify)
+            loss_ood_nes, acc_ood_nes = valid_step(ut, lte, cfg.max_len, cfg.max_nes+2, cfg.bs, xent, masked=cfg.masked, tf=cfg.tf, split='test', simplify=cfg.simplify)
 
             wandb.log({
                     "loss": loss_step,
                     "acc": acc_step,
                     "val_loss": loss_valid_step,
                     "val_acc": acc_valid_step,
-                    "ood_loss": loss_ood,
-                    "ood_acc": acc_ood,
+                    "ood_len_acc": acc_ood_len,
+                    "ood_nes_acc": acc_ood_nes,
                     "update": it,
                 })    
 

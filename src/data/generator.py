@@ -125,7 +125,9 @@ class LTEStepsGenerator(LTEGenerator):
             else:
                 _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
                 rand_idx = torch.randint(0, len(steps)-1, (1,)).item()
-                if simplify:
+                if start_to_end:
+                    x, y = steps[0], values[-1]
+                elif simplify:
                     start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
                     subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
                     x, y = steps[rand_idx], subexpressions[rand_idx]

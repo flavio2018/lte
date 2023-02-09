@@ -30,3 +30,4 @@ max_nes: 2
 step_generator: false
 ops: 'asmif'
 simplify: false
+substitute: false

@@ -105,7 +105,12 @@ class LTEStepsGenerator(LTEGenerator):
                                ops=ops,
                                steps=True)
 
-    def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', start_to_end=False, simplify=False):
+    def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', start_to_end=False, simplify=False, substitute=False):
+        """start_to_end: x = full expression, y = full expression value
+           simplify: x = full expression, y = subexpression
+           substitute: x = full expression, y = full expression with subexpression substituted by subexpression value
+           normal: x = full expression, y = subexpression value
+        """
 
         samples, targets = [], []
         samples_len, targets_len = [], []
@@ -114,23 +119,27 @@ class LTEStepsGenerator(LTEGenerator):
         for _ in range(batch_size):
             if split == 'test':
                 _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops, batch_size)
+                start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
+                subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
                 if start_to_end:
                     x, y = steps[0], values[-1]
                 elif simplify:
-                    start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
-                    subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
                     x, y = steps[0], subexpressions[0]
+                elif substitute:
+                    x, y = steps[0], self._substitute_subexpression(steps[0], values[0])
                 else:
                     x, y = steps[0], values[0]
             else:
                 _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
                 rand_idx = torch.randint(0, len(steps)-1, (1,)).item()
+                start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
+                subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]    
                 if start_to_end:
                     x, y = steps[0], values[-1]
                 elif simplify:
-                    start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
-                    subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
                     x, y = steps[rand_idx], subexpressions[rand_idx]
+                elif substitute:
+                    x, y = steps[rand_idx], self._substitute_subexpression(steps[rand_idx], values[rand_idx])
                 else:
                     x, y = steps[rand_idx], values[rand_idx]
             subexpr_start_end += [self._get_start_end_expr(x)]
@@ -168,3 +177,7 @@ class LTEStepsGenerator(LTEGenerator):
         for row, (start, end) in enumerate(x_start_end):
             mask[row, start:end] -= 1
         return mask.type(torch.BoolTensor).to(self.device)
+
+    def _substitute_subexpression(self, expression, repl):
+        return re.sub(r'[(][a-z0-9+*\-:=<>\[\] ]+[)]', repl, expression, count=1)
+    

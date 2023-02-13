@@ -15,7 +15,7 @@ import wandb
 def train_ood(cfg):
     print(omegaconf.OmegaConf.to_yaml(cfg))
     if cfg.step_generator:
-        lte = LTEStepsGenerator(cfg.device)
+        lte = LTEStepsGenerator(cfg.device, cfg.same_vocab)
         lte_kwargs = {
             "batch_size": cfg.bs,
             "simplify": cfg.simplify,

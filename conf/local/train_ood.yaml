@@ -31,3 +31,4 @@ step_generator: false
 ops: 'asmif'
 simplify: false
 substitute: false
+same_vocab: false

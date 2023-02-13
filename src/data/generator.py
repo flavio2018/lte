@@ -74,16 +74,22 @@ class LTEGenerator:
 
 
 class LTEStepsGenerator(LTEGenerator):
-    def __init__(self, device):
+    def __init__(self, device, same_vocab=False):
         super().__init__(device)
         vocab_chars = string.ascii_lowercase + string.digits + '()%+*-=<>[]: '
+        self.same_vocab = True
+        specials_y = [_SOS, _EOS, _PAD]
+        if same_vocab:
+            specials_x = specials_y
+        else:
+            specials_x = [_PAD]
         self.x_vocab = vocab(
             OrderedDict([(c, 1) for c in vocab_chars]),
-            specials=[_PAD],
+            specials=specials_x,
             special_first=False)
         self.y_vocab = vocab(
             OrderedDict([(c, 1) for c in vocab_chars]),
-            specials=[_SOS, _EOS, _PAD],
+            specials=specials_y,
             special_first=False)
         self.x_vocab_trans = VocabTransform(self.x_vocab)
         self.y_vocab_trans = VocabTransform(self.y_vocab)
@@ -143,7 +149,10 @@ class LTEStepsGenerator(LTEGenerator):
                 else:
                     x, y = steps[rand_idx], values[rand_idx]
             subexpr_start_end += [self._get_start_end_expr(x)]
-            samples.append(list(x))
+            if self.same_vocab:
+                samples.append([_SOS] + list(x) + [_EOS])                
+            else:
+                samples.append(list(x))
             targets.append([_SOS] + list(y) + [_EOS])
             samples_len.append(len(samples[-1]))
             targets_len.append(len(targets[-1]))

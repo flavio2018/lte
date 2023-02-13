@@ -29,19 +29,26 @@ def train_ood(cfg):
             "split": "train",
         }
 
-    ut = UniversalTransformer(
-        d_model=cfg.d_model,
-        num_heads=cfg.num_heads,
-        num_layers=cfg.num_layers,
-        generator=lte,
-    #     act_enc=ACT(d_model=d_model,
-    #                 max_hop=num_layers),
-    #     act_dec=ACT(d_model=d_model,
-    #                 max_hop=num_layers),
-        label_pe=cfg.label_pe,
-    ).to(cfg.device)
+    if cfg.copy_dec:
+        model = CopyDecTran(d_model=cfg.d_model,
+                        num_heads=cfg.num_heads,
+                        num_layers=cfg.num_layers,
+                        generator=lte_step,
+                        label_pe=cfg.label_pe).to(device)
+    else:
+        model = UniversalTransformer(
+            d_model=cfg.d_model,
+            num_heads=cfg.num_heads,
+            num_layers=cfg.num_layers,
+            generator=lte,
+        #     act_enc=ACT(d_model=d_model,
+        #                 max_hop=num_layers),
+        #     act_dec=ACT(d_model=d_model,
+        #                 max_hop=num_layers),
+            label_pe=cfg.label_pe,
+        ).to(cfg.device)
     xent = torch.nn.CrossEntropyLoss(reduction="none")
-    opt = torch.optim.Adam(ut.parameters(), lr=cfg.lr)
+    opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
     FREQ_WANDB_LOG = np.ceil(cfg.max_iter / 1000)
     wandb.init(
         project="lte",
@@ -51,19 +58,19 @@ def train_ood(cfg):
     wandb.run.name = cfg.codename
     wandb.config.update(omegaconf.OmegaConf.to_container(
         cfg, resolve=True, throw_on_missing=True))
-    wandb.watch(ut, log_freq=FREQ_WANDB_LOG)
+    wandb.watch(model, log_freq=FREQ_WANDB_LOG)
     start_timestamp = dt.now().strftime('%Y-%m-%d_%H-%M')
 
     for it in range(cfg.max_iter):
         lte_kwargs['split']='train'    
-        loss_step, acc_step = train_step(ut, lte, cfg.max_len, cfg.max_nes, lte_kwargs, opt, xent, masked=cfg.masked, tf=cfg.tf)
+        loss_step, acc_step = train_step(model, lte, cfg.max_len, cfg.max_nes, lte_kwargs, opt, xent, masked=cfg.masked, tf=cfg.tf)
 
         if it % FREQ_WANDB_LOG == 0:
             lte_kwargs['split']='valid'
-            loss_valid_step, acc_valid_step = valid_step(ut, lte, cfg.max_len, cfg.max_nes, lte_kwargs, xent, masked=cfg.masked, tf=cfg.tf)
+            loss_valid_step, acc_valid_step = valid_step(model, lte, cfg.max_len, cfg.max_nes, lte_kwargs, xent, masked=cfg.masked, tf=cfg.tf)
             lte_kwargs['split']='test'
-            loss_ood_len, acc_ood_len = valid_step(ut, lte, cfg.max_len+2, cfg.max_nes, lte_kwargs, xent, masked=cfg.masked, tf=cfg.tf)
-            loss_ood_nes, acc_ood_nes = valid_step(ut, lte, cfg.max_len, cfg.max_nes+2, lte_kwargs, xent, masked=cfg.masked, tf=cfg.tf)
+            loss_ood_len, acc_ood_len = valid_step(model, lte, cfg.max_len+2, cfg.max_nes, lte_kwargs, xent, masked=cfg.masked, tf=cfg.tf)
+            loss_ood_nes, acc_ood_nes = valid_step(model, lte, cfg.max_len, cfg.max_nes+2, lte_kwargs, xent, masked=cfg.masked, tf=cfg.tf)
 
             wandb.log({
                     "loss": loss_step,
@@ -78,7 +85,7 @@ def train_ood(cfg):
         if it % 1000 == 0:
             torch.save({
                     'update': it,
-                    'ut_state_dict': ut.state_dict(),
+                    'ut_state_dict': model.state_dict(),
                     'opt': opt.state_dict(),
                     'loss_train': loss_step,
                 }, os.path.join(hydra.utils.get_original_cwd(), f"../models/checkpoints/{start_timestamp}_{cfg.codename}.pth"))

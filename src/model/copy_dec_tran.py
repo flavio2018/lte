@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from model.ut.UniversalTransformer import UniversalTransformer
 from pdb import set_trace
 
@@ -26,28 +27,28 @@ class CopyDecTran(UniversalTransformer):
 		X = self.x_emb(X)
 
 		if not tf:
-			pass
-			if self.act_enc is None:
-				X = self.encoder(X, src_mask)
-			else:
-				X, _ = self.encoder(X, src_mask)
+			X = self.encoder(X, src_mask)
 			Y_pred_v = Y[:, 0, :].unsqueeze(1)
+			output = Y_pred_v
 			for t in range(Y.size(1)):
 				Y_pred = self.y_emb(Y_pred_v)
 				Y_pred = self.decoder(X, Y_pred, src_mask, None)
-				Y_pred = self.final_proj(Y_pred)
+				Y_pred = self._copy_dec(X_1hot, X, Y_pred)
 				Y_pred = Y_pred[:, -1].unsqueeze(1)  # take only the last pred
-				pred_idx = Y_pred.argmax(-1) 
+				pred_idx = Y_pred.argmax(-1)
+				output = torch.concat([output, Y_pred], dim=1) 
 				Y_sample = F.one_hot(pred_idx, num_classes=len(self.generator.y_vocab)).type(torch.FloatTensor).to(X.device)
 				Y_pred_v = torch.concat([Y_pred_v, Y_sample], dim=1)
-				return Y_pred_v
+			return output[:, 1:, :]  # cut SOS
 		else:
 			Y = self.y_emb(Y)
 			X = self.encoder(X, src_mask)
 			Y = self.decoder(X, Y, src_mask, tgt_mask)
+			return self._copy_dec(X_1hot, X, Y)
 
-			copy_q, copy_k, copy_v = self.linear_q(Y), X, X_1hot
-			p_2, attn_wts = self.copy_mha(copy_q, copy_k, copy_v)
-			p_1 = self.final_proj(Y)
-			w = torch.sigmoid(self.linear_w(Y))
-			return w*p_1 + (1-w)*p_2
+	def _copy_dec(self, X_1hot, enc_emb, dec_emb):
+		copy_q, copy_k, copy_v = self.linear_q(dec_emb), enc_emb, X_1hot
+		p_2, attn_wts = self.copy_mha(copy_q, copy_k, copy_v)
+		p_1 = self.final_proj(dec_emb)
+		w = torch.sigmoid(self.linear_w(dec_emb))
+		return w*p_1 + (1-w)*p_2

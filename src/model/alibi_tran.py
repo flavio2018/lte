@@ -57,6 +57,7 @@ class AlibiTran(UniversalTransformer):
 			Y = self.decoder(X, Y, src_mask, tgt_mask)
 			return self.final_proj(Y)
 
+
 class AlibiEncoder(UTEncoder):
 
 	def __init__(self, d_model, num_heads, num_layers, dropout=0.1, device='cpu'):
@@ -85,16 +86,14 @@ class AlibiEncoder(UTEncoder):
 		relative_position = memory_position - context_position 
 		relative_position = torch.abs(relative_position).unsqueeze(0).expand(attn_heads, -1,-1)
 
-		slopes = torch.Tensor(get_slopes(attn_heads)).cuda()*-1
+		slopes = torch.tensor(get_slopes(attn_heads), device=X.device)*-1
 		alibi = slopes.unsqueeze(1).unsqueeze(1) * relative_position
 
 		src_len = X.size(1)
 		bs = X.size(0)
 
 		return (alibi[:, :src_len, :src_len]
-					.tile(bs, 1, 1, 1)
-					.view(bs*attn_heads, src_len, src_len))
-
+					.repeat(bs, 1, 1))
 
 
 class AlibiDecoder(UTDecoder):

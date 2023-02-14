@@ -7,6 +7,7 @@ import numpy as np
 from model.ut.UniversalTransformer import UniversalTransformer
 from model.ut.ACT import ACT
 from model.copy_dec_tran import CopyDecTran
+from model.alibi_tran import AlibiTran
 from model.test import compute_loss, batch_acc, compute_act_loss
 from data.generator import LTEGenerator, LTEStepsGenerator
 import wandb
@@ -36,6 +37,11 @@ def train_ood(cfg):
                         num_layers=cfg.num_layers,
                         generator=lte,
                         label_pe=cfg.label_pe).to(cfg.device)
+    elif cfg.alibi:
+        model = AlibiTran(d_model=cfg.d_model,
+                        num_heads=cfg.num_heads,
+                        num_layers=cfg.num_layers,
+                        generator=lte).to(cfg.device)
     else:
         model = UniversalTransformer(
             d_model=cfg.d_model,

@@ -24,6 +24,7 @@ num_layers: 6
 label_pe: false
 masked: false
 copy_dec: false
+alibi: false
 
 # data
 max_len: 5

@@ -64,14 +64,14 @@ def train_ood(cfg):
 
     for it in range(cfg.max_iter):
         lte_kwargs['split']='train'    
-        loss_step, acc_step = train_step(model, lte, cfg.max_len, cfg.max_nes, lte_kwargs, opt, xent, masked=cfg.masked, tf=cfg.tf)
+        loss_step, acc_step = train_step(model, lte, cfg.max_len, cfg.max_nes, lte_kwargs, opt, xent, tf=cfg.tf)
 
         if it % FREQ_WANDB_LOG == 0:
             lte_kwargs['split']='valid'
-            loss_valid_step, acc_valid_step = valid_step(model, lte, cfg.max_len, cfg.max_nes, lte_kwargs, xent, masked=cfg.masked, tf=cfg.tf)
+            loss_valid_step, acc_valid_step = valid_step(model, lte, cfg.max_len, cfg.max_nes, lte_kwargs, xent, tf=cfg.tf)
             lte_kwargs['split']='test'
-            loss_ood_len, acc_ood_len = valid_step(model, lte, cfg.max_len+2, cfg.max_nes, lte_kwargs, xent, masked=cfg.masked, tf=cfg.tf)
-            loss_ood_nes, acc_ood_nes = valid_step(model, lte, cfg.max_len, cfg.max_nes+2, lte_kwargs, xent, masked=cfg.masked, tf=cfg.tf)
+            loss_ood_len, acc_ood_len = valid_step(model, lte, cfg.max_len+2, cfg.max_nes, lte_kwargs, xent, tf=cfg.tf)
+            loss_ood_nes, acc_ood_nes = valid_step(model, lte, cfg.max_len, cfg.max_nes+2, lte_kwargs, xent, tf=cfg.tf)
 
             wandb.log({
                     "loss": loss_step,
@@ -92,23 +92,16 @@ def train_ood(cfg):
                 }, os.path.join(hydra.utils.get_original_cwd(), f"../models/checkpoints/{start_timestamp}_{cfg.codename}.pth"))
             
 
-def train_step(model, lte, max_length, max_nesting, lte_kwargs, opt, xent, masked=False, tf=False):
+def train_step(model, lte, max_length, max_nesting, lte_kwargs, opt, xent, tf=False):
     model.train()
     opt.zero_grad()
-    mask = None
 
     if isinstance(lte, LTEStepsGenerator):
-        X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
+        X, Y, lenX, lenY, _ = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
     else:
         X, Y, lenX, lenY = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
-
-    if not masked:
-        mask = None
-    # x_idx = X.argmax(-1)
-    # padded_x = torch.where(~mask, x_idx, lte.x_vocab['#'])
-    # X = torch.nn.functional.one_hot(padded_x, num_classes=len(lte.x_vocab)).type(torch.float)
     
-    outputs = model(X, Y[:, :-1], mask, tf=tf)
+    outputs = model(X, Y[:, :-1], tf=tf)
     loss = compute_loss(xent, outputs, Y[:, 1:], lte)
     # loss += 0.01*compute_act_loss(outputs, act, X, Y[:, 1:], lte)
     acc = batch_acc(outputs, Y[:, 1:], Y.size(-1), lte)
@@ -118,18 +111,15 @@ def train_step(model, lte, max_length, max_nesting, lte_kwargs, opt, xent, maske
     return loss.item(), acc.item()
 
 
-def valid_step(model, lte, max_length, max_nesting, lte_kwargs, xent, masked=False, tf=False):
+def valid_step(model, lte, max_length, max_nesting, lte_kwargs, xent, tf=False):
     model.eval()
 
     if isinstance(lte, LTEStepsGenerator):
-        X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
+        X, Y, lenX, lenY, _ = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
     else:
         X, Y, lenX, lenY = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
-
-    if not masked:
-        mask = None
     
-    outputs = model(X, Y[:, :-1], mask, tf=tf)
+    outputs = model(X, Y[:, :-1], tf=tf)
     loss = compute_loss(xent, outputs, Y[:, 1:], lte)
     # loss += 0.01*compute_act_loss(outputs, act, X, Y[:, 1:], lte)
     acc = batch_acc(outputs, Y[:, 1:], Y.size(-1), lte)

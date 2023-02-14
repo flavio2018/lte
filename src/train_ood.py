@@ -6,6 +6,7 @@ import torch
 import numpy as np
 from model.ut.UniversalTransformer import UniversalTransformer
 from model.ut.ACT import ACT
+from model.copy_dec_tran import CopyDecTran
 from model.test import compute_loss, batch_acc, compute_act_loss
 from data.generator import LTEGenerator, LTEStepsGenerator
 import wandb

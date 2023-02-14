@@ -77,7 +77,6 @@ class LTEStepsGenerator(LTEGenerator):
     def __init__(self, device, same_vocab=False):
         super().__init__(device)
         vocab_chars = string.ascii_lowercase + string.digits + '()%+*-=<>[]: '
-        self.same_vocab = True
         specials_y = [_SOS, _EOS, _PAD]
         if same_vocab:
             specials_x = specials_y

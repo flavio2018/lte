@@ -34,8 +34,8 @@ def train_ood(cfg):
         model = CopyDecTran(d_model=cfg.d_model,
                         num_heads=cfg.num_heads,
                         num_layers=cfg.num_layers,
-                        generator=lte_step,
-                        label_pe=cfg.label_pe).to(device)
+                        generator=lte,
+                        label_pe=cfg.label_pe).to(cfg.device)
     else:
         model = UniversalTransformer(
             d_model=cfg.d_model,

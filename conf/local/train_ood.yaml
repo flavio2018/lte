@@ -25,6 +25,7 @@ label_pe: false
 masked: false
 copy_dec: false
 alibi: false
+copy_ut: false
 
 # data
 max_len: 5

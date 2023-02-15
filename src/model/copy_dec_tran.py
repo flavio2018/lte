@@ -74,12 +74,12 @@ class CopyTransformer(UniversalTransformer):
 		X_proj = self.x_emb(X)
 
 		if not tf:
-			X = self.encoder(X, src_mask)
+			X_emb = self.encoder(X_proj, src_mask)
 			Y_pred_v = Y[:, 0, :].unsqueeze(1)
 			output = Y_pred_v
 			for t in range(Y.size(1)):
 				Y_pred = self.y_emb(Y_pred_v)
-				Y_pred = self.decoder(X, X_proj, Y_pred, src_mask, None)
+				Y_pred = self.decoder(X_emb, X_proj, Y_pred, src_mask, None)
 				Y_pred = Y_pred[:, -1].unsqueeze(1)  # take only the last pred
 				pred_idx = Y_pred.argmax(-1)
 				output = torch.concat([output, Y_pred], dim=1) 
@@ -88,8 +88,8 @@ class CopyTransformer(UniversalTransformer):
 			return output[:, 1:, :]  # cut SOS
 		else:
 			Y = self.y_emb(Y)
-			X = self.encoder(X, src_mask)
-			return self.decoder(X, X_proj, Y, src_mask, tgt_mask)
+			X_emb = self.encoder(X_proj, src_mask)
+			return self.decoder(X_emb, X_proj, Y, src_mask, tgt_mask)
 
 
 class CopyDecoder(UTDecoder):
@@ -98,7 +98,7 @@ class CopyDecoder(UTDecoder):
 		super().__init__(d_model, num_heads, num_layers, dropout=dropout, label_pe=label_pe, device=device)
 		self.MHSA = MultiheadAttention(embed_dim=d_model, num_heads=num_heads, batch_first=True)
 
-	def forward(self, X, X_projX_proj, Y, src_mask, tgt_mask):
+	def forward(self, X, X_proj, Y, src_mask, tgt_mask):
 		for l in range(self.num_layers):
 			Y = self._pe(Y, self.label_pe)
 			X_proj = self._pe(X_proj, self.label_pe)

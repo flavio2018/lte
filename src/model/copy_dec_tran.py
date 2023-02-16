@@ -126,7 +126,8 @@ class CopyDecoder(UTDecoder):
 	def __init__(self, d_model, num_heads, num_layers, vocab_dim, dropout=0.1, label_pe=False, device='cpu'):
 		super().__init__(d_model, num_heads, num_layers, dropout=dropout, label_pe=label_pe, device=device)
 		self.MHSA = MultiheadAttention(embed_dim=d_model, num_heads=num_heads, batch_first=True, kdim=vocab_dim, vdim=vocab_dim)
-		self.positional_encoding_vocab = _gen_timing_signal(5000, vocab_dim)
+		positional_encoding_vocab = _gen_timing_signal(5000, vocab_dim)
+        self.register_buffer('positional_encoding_vocab', positional_encoding_vocab)
 
 	def forward(self, X, X_1hot, Y, src_mask, tgt_mask):
 		for l in range(self.num_layers):
@@ -162,7 +163,8 @@ class CopyEncoder(UTEncoder):
 	def __init__(self, d_model, num_heads, num_layers, vocab_dim, dropout=0.1, label_pe=False, device='cpu'):
 		super().__init__(d_model, num_heads, num_layers, dropout=dropout, label_pe=label_pe, device=device)
 		self.MHSA = MultiheadAttention(embed_dim=d_model, num_heads=num_heads, batch_first=True, kdim=vocab_dim, vdim=vocab_dim)
-		self.positional_encoding_vocab = _gen_timing_signal(5000, vocab_dim)
+		positional_encoding_vocab = _gen_timing_signal(5000, vocab_dim)
+        self.register_buffer('positional_encoding_vocab', positional_encoding_vocab)
 
 	def forward(self, X, X_1hot, src_mask):
 		for l in range(self.num_layers):

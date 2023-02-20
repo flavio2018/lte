@@ -33,5 +33,6 @@ max_nes: 2
 step_generator: false
 ops: 'asmif'
 simplify: false
+simplify_w_value: false
 substitute: false
 same_vocab: false

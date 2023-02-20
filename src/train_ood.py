@@ -21,6 +21,7 @@ def train_ood(cfg):
         lte_kwargs = {
             "batch_size": cfg.bs,
             "simplify": cfg.simplify,
+            "simplify_w_value": cfg.simplify_w_value,
             "substitute": cfg.substitute,
             "split": "train",
         }

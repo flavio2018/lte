@@ -111,7 +111,7 @@ class LTEStepsGenerator(LTEGenerator):
                                ops=ops,
                                steps=True)
 
-    def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', start_to_end=False, simplify=False, substitute=False):
+    def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', start_to_end=False, simplify=False, simplify_w_value=False, substitute=False):
         """start_to_end: x = full expression, y = full expression value
            simplify: x = full expression, y = subexpression
            substitute: x = full expression, y = full expression with subexpression substituted by subexpression value
@@ -131,6 +131,8 @@ class LTEStepsGenerator(LTEGenerator):
                     x, y = steps[0], values[-1]
                 elif simplify:
                     x, y = steps[0], subexpressions[0]
+                elif simplify_w_value:
+                    x, y = steps[0], f"{values[0]} {subexpressions[0]}"
                 elif substitute:
                     x, y = steps[0], self._substitute_subexpression(steps[0], values[0])
                 else:
@@ -144,6 +146,8 @@ class LTEStepsGenerator(LTEGenerator):
                     x, y = steps[0], values[-1]
                 elif simplify:
                     x, y = steps[rand_idx], subexpressions[rand_idx]
+                elif simplify_w_value:
+                    x, y = steps[rand_idx], f"{values[rand_idx]} {subexpressions[rand_idx]}"
                 elif substitute:
                     x, y = steps[rand_idx], self._substitute_subexpression(steps[rand_idx], values[rand_idx])
                 else:

@@ -193,4 +193,13 @@ class LTEStepsGenerator(LTEGenerator):
 
     def _substitute_subexpression(self, expression, repl):
         return re.sub(r'[(][a-z0-9+*\-:=<>\[\] ]+[)]', repl, expression, count=1)
-    
+
+
+def get_mins_maxs_from_mask(mask):
+    mins_maxs = torch.zeros((mask.size(0), 2), device=mask.device)
+
+    for i in range(mask.size(0)):
+        i_positions = torch.argwhere(~mask).T[0, :]==i
+        mins_maxs[i, 0] = torch.argwhere(~mask).T[1][i_positions].min().item()
+        mins_maxs[i, 1] = torch.argwhere(~mask).T[1][i_positions].max().item()
+    return mins_maxs

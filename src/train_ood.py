@@ -8,8 +8,9 @@ from model.ut.UniversalTransformer import UniversalTransformer
 from model.ut.ACT import ACT
 from model.copy_dec_tran import CopyDecTran, CopyTransformer
 from model.alibi_tran import AlibiTran
+from model.regression_tran import UTwRegressionHead
 from model.test import compute_loss, batch_acc, compute_act_loss
-from data.generator import LTEGenerator, LTEStepsGenerator
+from data.generator import LTEGenerator, LTEStepsGenerator, get_mins_maxs_from_mask
 import wandb
 
 
@@ -49,6 +50,12 @@ def train_ood(cfg):
                              num_layers=cfg.num_layers,
                              generator=lte,
                              label_pe=cfg.label_pe).to(cfg.device)
+    elif cfg.regr_ut:
+        model = UTwRegressionHead(d_model=cfg.d_model,
+                                 num_heads=cfg.num_heads,
+                                 num_layers=cfg.num_layers,
+                                 generator=lte,
+                                 label_pe=cfg.label_pe).to(cfg.device)
     else:
         model = UniversalTransformer(
             d_model=cfg.d_model,
@@ -113,11 +120,17 @@ def train_step(model, lte, max_length, max_nesting, lte_kwargs, opt, xent, tf=Fa
         X, Y, lenX, lenY, _ = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
     else:
         X, Y, lenX, lenY = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
-    
-    outputs = model(X, Y[:, :-1], tf=tf)
-    loss = compute_loss(xent, outputs, Y[:, 1:], lte)
-    # loss += 0.01*compute_act_loss(outputs, act, X, Y[:, 1:], lte)
-    acc = batch_acc(outputs, Y[:, 1:], Y.size(-1), lte)
+
+    outputs = model(X, Y[:, :-1], tf=tf)    
+    if isinstance(model, UTwRegressionHead):
+        classification_outputs, regression_outputs = outputs
+        classification_loss = compute_loss(xent, classification_outputs, Y[:, 1:], lte)
+        acc = batch_acc(classification_outputs, Y[:, 1:], Y.size(-1), lte)
+        regression_loss = torch.nn.functional.huber_loss(regression_outputs[:, -1], get_mins_maxs_from_mask(mask))
+        loss = classification_loss + regression_loss
+    else:
+        loss = compute_loss(xent, outputs, Y[:, 1:], lte)
+        acc = batch_acc(outputs, Y[:, 1:], Y.size(-1), lte)
 
     loss.backward()
     opt.step()
@@ -132,10 +145,16 @@ def valid_step(model, lte, max_length, max_nesting, lte_kwargs, xent, tf=False):
     else:
         X, Y, lenX, lenY = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
     
-    outputs = model(X, Y[:, :-1], tf=tf)
-    loss = compute_loss(xent, outputs, Y[:, 1:], lte)
-    # loss += 0.01*compute_act_loss(outputs, act, X, Y[:, 1:], lte)
-    acc = batch_acc(outputs, Y[:, 1:], Y.size(-1), lte)
+    outputs = model(X, Y[:, :-1], tf=tf)    
+    if isinstance(model, UTwRegressionHead):
+        classification_outputs, regression_outputs = outputs
+        classification_loss = compute_loss(xent, classification_outputs, Y[:, 1:], lte)
+        acc = batch_acc(classification_outputs, Y[:, 1:], Y.size(-1), lte)
+        regression_loss = torch.nn.functional.huber_loss(regression_outputs[:, -1], get_mins_maxs_from_mask(mask))
+        loss = classification_loss + regression_loss
+    else:
+        loss = compute_loss(xent, outputs, Y[:, 1:], lte)
+        acc = batch_acc(outputs, Y[:, 1:], Y.size(-1), lte)
     return loss.item(), acc.item()
     
 

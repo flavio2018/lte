@@ -8,5 +8,8 @@ wandb/
 __pycache__/
 src.egg-info/
 .ipynb_checkpoints/
-loss_fn_deepmind.py
-deepmind-data.py
+*deepmind*.py
+*ecd*.py
+download_ckpt.sh
+notebooks/
+scripts/

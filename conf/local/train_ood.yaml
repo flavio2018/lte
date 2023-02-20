@@ -26,6 +26,7 @@ masked: false
 copy_dec: false
 alibi: false
 copy_ut: false
+regr_ut: false
 
 # data
 max_len: 5

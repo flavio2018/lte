@@ -117,7 +117,7 @@ def train_step(model, lte, max_length, max_nesting, lte_kwargs, opt, xent, tf=Fa
     opt.zero_grad()
 
     if isinstance(lte, LTEStepsGenerator):
-        X, Y, lenX, lenY, _ = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
+        X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
     else:
         X, Y, lenX, lenY = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
 
@@ -141,7 +141,7 @@ def valid_step(model, lte, max_length, max_nesting, lte_kwargs, xent, tf=False):
     model.eval()
 
     if isinstance(lte, LTEStepsGenerator):
-        X, Y, lenX, lenY, _ = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
+        X, Y, lenX, lenY, mask = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
     else:
         X, Y, lenX, lenY = lte.generate_batch(max_length, max_nesting, **lte_kwargs)
     

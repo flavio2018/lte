@@ -1,11 +1,11 @@
 defaults:
-				- override hydra/hydra_logging: none
-				- override hydra/job_logging: custom
-				- _self_
+        - override hydra/hydra_logging: none
+        - override hydra/job_logging: custom
+        - _self_
 
 hydra:
-	run:
-		dir: ../hydra/${hydra.job.name}/${now:%Y-%B-%d_%H-%M-%S}
+  run:
+    dir: ../hydra/${hydra.job.name}/${now:%Y-%B-%d_%H-%M-%S}
 
 # run
 codename: test_ood

@@ -1,0 +1,27 @@
+defaults:
+        - override hydra/hydra_logging: none
+        - override hydra/job_logging: custom
+        - _self_
+
+hydra:
+  run:
+    dir: ../hydra/${hydra.job.name}/${now:%Y-%B-%d_%H-%M-%S}
+
+# run
+codename: test_ood
+device: 'cuda'
+
+# testing
+bs: 128
+num_trials: 10
+
+# model
+d_model: 256
+num_heads: 4
+num_layers: 1
+label_pe: false
+regr_ut: false
+
+# data
+step_generator: false
+simplify_w_value: false

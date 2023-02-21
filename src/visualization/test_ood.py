@@ -3,6 +3,7 @@ import omegaconf
 import torch
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 from datetime import datetime as dt
 import os
 from data.generator import LTEGenerator, LTEStepsGenerator, get_mins_maxs_from_mask
@@ -21,15 +22,13 @@ def main(cfg):
 	model = load_model(cfg, lte)
 	metric = 'characc'
 	ax = test_ood(model, lte, 'nesting', trials=cfg.num_trials, generator_kwargs=lte_kwargs)
-	fig = ax.get_figure()
-	fig.savefig(os.path.join(hydra.utils.get_original_cwd(),
+	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/figures/{start_timestamp}_{task_id}_{model_id}_{metric}.pdf"))
 	if isinstance(model, UTwRegressionHead):
 		plt.clf()
 		metric = 'huberloss'
 		ax = test_ood(model, lte, 'nesting', trials=cfg.num_trials, generator_kwargs=lte_kwargs, regr=True)
-		fig = ax.get_figure()
-		fig.savefig(os.path.join(hydra.utils.get_original_cwd(),
+		plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 			f"../reports/figures/{start_timestamp}_{task_id}_{model_id}_{metric}.pdf"))
 
 

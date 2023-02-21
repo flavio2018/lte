@@ -25,6 +25,7 @@ def main(cfg):
 	fig.savefig(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/figures/{start_timestamp}_{task_id}_{model_id}_{metric}.pdf"))
 	if isinstance(model, UTwRegressionHead):
+		plt.clf()
 		metric = 'huberloss'
 		ax = test_ood(model, lte, 'nesting', trials=cfg.num_trials, generator_kwargs=lte_kwargs, regr=True)
 		fig = ax.get_figure()

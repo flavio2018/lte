@@ -25,4 +25,5 @@ regr_ut: false
 
 # data
 step_generator: false
+same_vocab: false
 simplify_w_value: false

@@ -114,3 +114,7 @@ def test_ood(model, generator, dp_name, max_dp_value=10, trials=10, generator_kw
 	
 	ax = sns.lineplot(data=df, x=dp_name, y=y_axis, label=plot_label, ax=plot_ax)
 	return ax
+
+
+if __name__ == '__main__':
+	main()

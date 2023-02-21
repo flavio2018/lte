@@ -16,6 +16,7 @@ bs: 128
 num_trials: 10
 
 # model
+ckpt: ''
 d_model: 256
 num_heads: 4
 num_layers: 1

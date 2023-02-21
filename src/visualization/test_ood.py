@@ -4,6 +4,7 @@ import torch
 import pandas as pd
 import seaborn as sns
 import datetime as dt
+import os
 from data.generator import LTEGenerator, LTEStepsGenerator, get_mins_maxs_from_mask
 from model.regression_tran import UTwRegressionHead
 from model.ut.UniversalTransformer import UniversalTransformer
@@ -61,7 +62,10 @@ def load_model(cfg, lte):
             generator=lte,
             label_pe=cfg.label_pe,
         ).to(cfg.device)
-
+    model.load_state_dict(
+    	torch.load(
+    		os.path.join(hydra.utils.get_original_cwd(),
+    			f'../models/checkpoints/{cfg.ckpt}'), map_location=cfg.device)['ut_state_dict'])
 	return model
 
 

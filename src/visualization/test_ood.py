@@ -11,7 +11,7 @@ from model.ut.UniversalTransformer import UniversalTransformer
 from model.test import batch_acc
 
 
-@hydra.main(config_path="../conf/local", config_name="test_ood", version_base='1.2')
+@hydra.main(config_path="../../conf/local", config_name="test_ood", version_base='1.2')
 def main():
 	start_timestamp = dt.now().strftime('%Y-%m-%d_%H-%M')
 	model_id = 'regr_ut' if cfg.regr_ut else 'ut'

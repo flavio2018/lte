@@ -1,6 +1,7 @@
 import torch
 from data.generator import _PAD
 from utils.rnn_utils import save_states, save_states_dntm, reduce_lens
+import warnings
 
 
 def encdec_dntm_step(encoder, decoder, final_mlp, sample, target, samples_len, targets_len, device):
@@ -155,14 +156,34 @@ def compute_act_loss(outputs, act, inputs, target, generator):
 	rho_enc = (R_enc + N_enc) * mask_x
 	rho_dec = (R_dec + N_dec) * mask_y
 	return (rho_enc.mean() + rho_dec.mean()).mean()
+    
+
+def _fix_Y_or_output_shape(output, Y, generator):
+    # fix pred/target shape mismatch
+    if output.size(1) < Y.size(1):
+        missing_timesteps = Y.size(1) - output.size(1)
+        pad_vecs = torch.nn.functional.one_hot(torch.tensor(generator.y_vocab['#'],
+                                                            device=Y.device)).tile(output.size(0),
+                                                                                   missing_timesteps, 1)
+        output = torch.concat([output, pad_vecs], dim=1)
+    elif output.size(1) > Y.size(1):
+        missing_timesteps = output.size(1) - Y.size(1)
+        pad_vecs = torch.nn.functional.one_hot(torch.tensor(generator.y_vocab['#'],
+                                                            device=Y.device)).tile(output.size(0),
+                                                                                   missing_timesteps, 1)
+        Y = torch.concat([Y, pad_vecs], dim=1)
+    return output, Y
 	
 
 def batch_acc(outputs, targets, vocab_size, generator):
+	if isinstance(outputs, list):
+		outputs = torch.concat([o.unsqueeze(1) for o in outputs], dim=1)	
+	if outputs.size() != targets.size():
+		warnings.warn("Outputs shape different from targets shape. Fixing.")
+		outputs, targets = _fix_Y_or_output_shape(outputs, targets, generator)
 	idx_pad = generator.y_vocab[_PAD]
 	idx_targets = targets.argmax(dim=-1)
 	mask = (idx_targets != idx_pad).type(torch.int32)
-	if isinstance(outputs, list):
-		outputs = torch.concat([o.unsqueeze(1) for o in outputs], dim=1)
 	idx_outs = outputs.argmax(dim=-1)
 	out_equal_target = (idx_outs == idx_targets).type(torch.int32)
 	masked_out_equal_target = out_equal_target * mask

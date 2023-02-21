@@ -8,7 +8,7 @@ import os
 from data.generator import LTEGenerator, LTEStepsGenerator, get_mins_maxs_from_mask
 from model.regression_tran import UTwRegressionHead
 from model.ut.UniversalTransformer import UniversalTransformer
-from test import batch_acc
+from model.test import batch_acc
 
 
 @hydra.main(config_path="../conf/local", config_name="test_ood")

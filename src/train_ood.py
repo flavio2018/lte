@@ -126,7 +126,7 @@ def train_step(model, lte, max_length, max_nesting, lte_kwargs, opt, xent, tf=Fa
         classification_outputs, regression_outputs = outputs
         classification_loss = compute_loss(xent, classification_outputs, Y[:, 1:], lte)
         acc = batch_acc(classification_outputs, Y[:, 1:], Y.size(-1), lte)
-        regression_loss = torch.nn.functional.huber_loss(regression_outputs[:, -1], get_mins_maxs_from_mask(mask))
+        regression_loss = torch.nn.functional.huber_loss(regression_outputs.squeeze(), get_mins_maxs_from_mask(mask))
         loss = classification_loss + regression_loss
     else:
         loss = compute_loss(xent, outputs, Y[:, 1:], lte)
@@ -150,7 +150,7 @@ def valid_step(model, lte, max_length, max_nesting, lte_kwargs, xent, tf=False):
         classification_outputs, regression_outputs = outputs
         classification_loss = compute_loss(xent, classification_outputs, Y[:, 1:], lte)
         acc = batch_acc(classification_outputs, Y[:, 1:], Y.size(-1), lte)
-        regression_loss = torch.nn.functional.huber_loss(regression_outputs[:, -1], get_mins_maxs_from_mask(mask))
+        regression_loss = torch.nn.functional.huber_loss(regression_outputs.squeeze(), get_mins_maxs_from_mask(mask))
         loss = classification_loss + regression_loss
     else:
         loss = compute_loss(xent, outputs, Y[:, 1:], lte)

@@ -98,7 +98,7 @@ def test_ood(model, generator, dp_name, max_dp_value=10, trials=10, tf=False, ge
 				if isinstance(model, UTwRegressionHead):
 					classification_outputs, regression_outputs = output
 					acc = batch_acc(classification_outputs, Y[:, 1:], Y.size(-1), generator)
-					regression_loss = torch.nn.functional.huber_loss(regression_outputs[:, -1], get_mins_maxs_from_mask(mask))
+					regression_loss = torch.nn.functional.huber_loss(regression_outputs.squeeze(), get_mins_maxs_from_mask(mask))
 					huber_loss_values += [regression_loss.item()]
 				else:
 					acc = batch_acc(output, Y[:, 1:], Y.size(-1), generator)

@@ -83,8 +83,10 @@ def train_ood(cfg):
     start_timestamp = dt.now().strftime('%Y-%m-%d_%H-%M')
 
     for it in range(cfg.max_iter):
-        lte_kwargs['split']='train'    
-        loss_step, acc_step = train_step(model, lte, cfg.max_len, cfg.max_nes, lte_kwargs, opt, xent, tf=cfg.tf)
+        lte_kwargs['split']='train'
+        if isinstance(cfg.tf, float):
+            tf = True if (torch.rand(1) > cfg.tf).item() else False    
+        loss_step, acc_step = train_step(model, lte, cfg.max_len, cfg.max_nes, lte_kwargs, opt, xent, tf=tf)
 
         if it % FREQ_WANDB_LOG == 0:
             lte_kwargs['split']='valid'

@@ -39,12 +39,14 @@ def build_generator(cfg):
 			"batch_size": cfg.bs,
 			"simplify_w_value": cfg.simplify_w_value,
 			"split": "test",
+			"ops": cfg.ops,
 		}
 	else:
 		lte = LTEGenerator(cfg.device)
 		lte_kwargs = {
 			"batch_size": cfg.bs,
 			"split": "test",
+			"ops": cfg.ops,
 		}
 	return lte, lte_kwargs
 

@@ -85,7 +85,9 @@ def train_ood(cfg):
     for it in range(cfg.max_iter):
         lte_kwargs['split']='train'
         if isinstance(cfg.tf, float):
-            tf = True if (torch.rand(1) > cfg.tf).item() else False    
+            tf = True if (torch.rand(1) > cfg.tf).item() else False
+        else:
+            tf = cfg.tf
         loss_step, acc_step = train_step(model, lte, cfg.max_len, cfg.max_nes, lte_kwargs, opt, xent, tf=tf)
 
         if it % FREQ_WANDB_LOG == 0:

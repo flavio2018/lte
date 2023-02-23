@@ -22,13 +22,13 @@ def main(cfg):
 	metric = 'characc'
 	ax = test_ood(model, lte, 'nesting', trials=cfg.num_trials, tf=cfg.tf, generator_kwargs=lte_kwargs)
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
-		f"../reports/figures/{cfg.ckpt}_{task_id}_{model_id}_{metric}.pdf"))
+		f"../reports/figures/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.pdf"))
 	if isinstance(model, UTwRegressionHead):
 		plt.clf()
 		metric = 'huberloss'
 		ax = test_ood(model, lte, 'nesting', trials=cfg.num_trials, tf=cfg.tf, generator_kwargs=lte_kwargs, regr=True)
 		plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
-			f"../reports/figures/{cfg.ckpt}_{task_id}_{model_id}_{metric}.pdf"))
+			f"../reports/figures/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.pdf"))
 
 
 def build_generator(cfg):

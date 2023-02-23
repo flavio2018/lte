@@ -13,7 +13,6 @@ device: 'cuda'
 
 # testing
 bs: 128
-num_trials: 10
 tf: false
 
 # model

@@ -23,4 +23,4 @@ class UTwRegressionHead(UniversalTransformer):
 		X = self.encoder(X, src_mask)
 		first_last_idx = torch.tensor([0, X.size(1)-1])
 		self.regression_inputs = X[:, first_last_idx]
-		return X[:, 1:-1]
+		return X[:, 1:-1], src_mask[:, 1:-1]

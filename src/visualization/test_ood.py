@@ -14,7 +14,6 @@ from model.test import batch_acc
 
 @hydra.main(config_path="../../conf/local", config_name="test_ood", version_base='1.2')
 def main(cfg):
-	start_timestamp = dt.now().strftime('%Y-%m-%d_%H-%M')
 	model_id = 'regr_ut' if cfg.regr_ut else 'ut'
 	task_id = 'simplify_w_value' if cfg.simplify_w_value else 'simplify'
 
@@ -23,13 +22,13 @@ def main(cfg):
 	metric = 'characc'
 	ax = test_ood(model, lte, 'nesting', trials=cfg.num_trials, tf=cfg.tf, generator_kwargs=lte_kwargs)
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
-		f"../reports/figures/{start_timestamp}_{task_id}_{model_id}_{metric}.pdf"))
+		f"../reports/figures/{cfg.ckpt}_{task_id}_{model_id}_{metric}.pdf"))
 	if isinstance(model, UTwRegressionHead):
 		plt.clf()
 		metric = 'huberloss'
 		ax = test_ood(model, lte, 'nesting', trials=cfg.num_trials, tf=cfg.tf, generator_kwargs=lte_kwargs, regr=True)
 		plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
-			f"../reports/figures/{start_timestamp}_{task_id}_{model_id}_{metric}.pdf"))
+			f"../reports/figures/{cfg.ckpt}_{task_id}_{model_id}_{metric}.pdf"))
 
 
 def build_generator(cfg):

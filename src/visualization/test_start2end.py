@@ -31,7 +31,7 @@ def main(cfg):
 		f"../reports/figures/{cfg.ckpt[:-4]}_start2end.pdf"))	
 
 def contain_space(outputs):
-	return np.char.count(outputs, ' ') > 0
+	return np.char.count(outputs, ' ') == 1
 
 def cut_at_first_dot(repl):
 	cut_idx = re.search(r'\.', repl).span(0)[0]  # postion of first dot

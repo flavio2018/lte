@@ -28,7 +28,7 @@ def main(cfg):
 																	 'split': 'test',
 																	 'ops': cfg.ops})
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
-		f"../reports/figures/{cfg.ckpt[:-4]}_{start2end}.pdf"))	
+		f"../reports/figures/{cfg.ckpt[:-4]}_start2end.pdf"))	
 
 def contain_space(outputs):
 	return np.char.count(outputs, ' ') > 0

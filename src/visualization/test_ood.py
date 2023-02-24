@@ -9,7 +9,8 @@ import os
 from data.generator import LTEGenerator, LTEStepsGenerator, get_mins_maxs_from_mask
 from model.regression_tran import UTwRegressionHead
 from model.ut.UniversalTransformer import UniversalTransformer
-from model.test import batch_acc
+from model.test import batch_acc, _fix_output_shape
+import warnings
 
 
 @hydra.main(config_path="../../conf/local", config_name="test_ood", version_base='1.2')
@@ -94,6 +95,10 @@ def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, 
 			model.eval()
 			Y_model = Y[:, :-1] if use_y else None
 			output = model(X, Y=Y_model, tf=tf)
+			if output.size() != Y[:, 1:].size():
+				warnings.warn(f"Outputs shape {output.size()} different from targets shape {Y[:, 1:].size()}. Fixing.")
+				output = _fix_output_shape(output, Y[:, 1:], generator)
+
 			if isinstance(model, UTwRegressionHead):
 				classification_outputs, regression_outputs = output
 				acc = batch_acc(classification_outputs, Y[:, 1:], Y.size(-1), generator)

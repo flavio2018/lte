@@ -14,6 +14,7 @@ device: 'cuda'
 # testing
 bs: 128
 tf: false
+use_y: false
 
 # model
 ckpt: ''

@@ -20,13 +20,13 @@ def main(cfg):
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
 	metric = 'characc'
-	ax = test_ood(model, lte, 'nesting', tf=cfg.tf, generator_kwargs=lte_kwargs)
+	ax = test_ood(model, lte, 'nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs)
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/figures/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.pdf"))
 	if isinstance(model, UTwRegressionHead):
 		plt.clf()
 		metric = 'huberloss'
-		ax = test_ood(model, lte, 'nesting', tf=cfg.tf, generator_kwargs=lte_kwargs, regr=True)
+		ax = test_ood(model, lte, 'nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs, regr=True)
 		plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 			f"../reports/figures/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.pdf"))
 
@@ -72,7 +72,7 @@ def load_model(cfg, lte):
 	return model
 
 
-def test_ood(model, generator, dp_name, max_dp_value=10, tf=False, generator_kwargs=None, plot_ax=None, plot_label=None, regr=False):
+def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, generator_kwargs=None, plot_ax=None, plot_label=None, regr=False):
 	accuracy_values = []
 	huber_loss_values = []
 	dp_values = []  # dp = distribution parameter
@@ -92,7 +92,8 @@ def test_ood(model, generator, dp_name, max_dp_value=10, tf=False, generator_kwa
 		
 		with torch.no_grad():
 			model.eval()
-			output = model(X, Y=Y[:, :-1], tf=tf)
+            Y_model = Y[:, :-1] if use_y else None
+			output = model(X, Y=Y_model, tf=tf)
 			if isinstance(model, UTwRegressionHead):
 				classification_outputs, regression_outputs = output
 				acc = batch_acc(classification_outputs, Y[:, 1:], Y.size(-1), generator)

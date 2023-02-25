@@ -98,7 +98,9 @@ def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, 
 			Y_model = Y[:, :-1] if use_y else None
 			output = model(X, Y=Y_model, tf=tf)
 			if output.size() != Y[:, 1:].size():
-				warnings.warn(f"Outputs shape {output.size()} different from targets shape {Y[:, 1:].size()}. Fixing.")
+				warn_str = f"Outputs shape {output.size()} different from targets shape {Y[:, 1:].size()}. Fixing."
+				warnings.warn(warn_str)
+				print(warn_str)
 				output = _fix_output_shape(output, Y[:, 1:], generator)
 
 			if isinstance(model, UTwRegressionHead):

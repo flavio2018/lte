@@ -17,6 +17,7 @@ import warnings
 def main(cfg):
 	model_id = 'regr_ut' if cfg.regr_ut else 'ut'
 	task_id = 'simplify_w_value' if cfg.simplify_w_value else 'simplify'
+	warnings.filterwarnings("always", category=UserWarning)
 
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)

@@ -122,7 +122,9 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 		if running.any():
 			output, Y = output[running], Y[running]
 			if output.size() != Y[:, 1:].size():
-				warnings.warn(f"Outputs shape {output.size()} different from targets shape {Y[:, 1:].size()}. Fixing.")
+				warn_str = f"Outputs shape {output.size()} different from targets shape {Y[:, 1:].size()}. Fixing."
+				print(warn_str)
+				warnings.warn(warn_str)
 				output = _fix_output_shape(output, Y[:, 1:], generator)
 
 			acc = batch_acc(output, Y[:, 1:], Y.size(-1), generator)

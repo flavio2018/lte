@@ -80,6 +80,7 @@ def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, 
 	dp_values = []  # dp = distribution parameter
 	
 	for dp_value in range(1, max_dp_value+1):
+		print("---", dp_name, dp_value, "---")
 		if dp_name == 'length':
 			values = generator.generate_batch(dp_value, 1, **generator_kwargs)
 		elif dp_name == 'nesting':

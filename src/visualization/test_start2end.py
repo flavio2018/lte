@@ -108,6 +108,7 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 	survivors = []
 	
 	for n in range(1, max_nes+1):
+		print(f"--- nesting {n} ---")
 		values = generator.generate_batch(1, n, **generator_kwargs)
 
 		if isinstance(generator, LTEStepsGenerator):

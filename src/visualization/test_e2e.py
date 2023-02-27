@@ -52,10 +52,7 @@ def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, 
 		else:
 			raise ValueError(f"Wrong distribution parameter: {dp_name}")
 
-		if isinstance(generator, LTEStepsGenerator):
-			X, Y, lenX, lenY, _ = values
-		else:
-			X, Y, lenX, lenY = values
+		X, Y, lenX, lenY = values
 
 		with torch.no_grad():
 			model.eval()

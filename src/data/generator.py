@@ -62,7 +62,7 @@ class LTEGenerator:
         padded_samples = self.x_to_tensor_trans(tokenized_samples).to(self.device)
         padded_targets = self.y_to_tensor_trans(tokenized_targets).to(self.device)
         return (F.one_hot(padded_samples, num_classes=len(self.x_vocab)).type(torch.float),
-                F.one_hot(padded_targets, num_classes=len(self.x_vocab)).type(torch.float),
+                F.one_hot(padded_targets, num_classes=len(self.y_vocab)).type(torch.float),
                 samples_len,
                 targets_len)
     

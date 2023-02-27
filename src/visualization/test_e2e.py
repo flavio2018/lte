@@ -3,6 +3,7 @@ import omegaconf
 from data.generator import LTEGenerator
 from model.ut.UniversalTransformer import UniversalTransformer
 from model.test import batch_acc, _fix_output_shape
+import os
 import torch
 import seaborn as sns
 import matplotlib.pyplot as plt

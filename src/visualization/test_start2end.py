@@ -14,11 +14,13 @@ from model.ut.UniversalTransformer import UniversalTransformer
 from model.test import batch_acc, _fix_output_shape
 from visualization.test_ood import build_generator, load_model
 import warnings
+from icecream import ic
 
 
 @hydra.main(config_path="../../conf/local", config_name="test_start2end", version_base='1.2')
 def main(cfg):
 	warnings.filterwarnings('always', category=UserWarning)
+	ic.enable() if cfg.enable_ic else ic.disable()
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
 	wrapped_model = ModelWrapper(model)
@@ -30,12 +32,22 @@ def main(cfg):
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/figures/{cfg.ckpt[:-4]}_start2end.pdf"))	
 
-def contain_space(outputs):
+def contain_one_space(outputs):
 	return np.char.count(outputs, ' ') == 1
 
-def cut_at_first_dot(repl):
-	cut_idx = re.search(r'\.', repl).span(0)[0]  # postion of first dot
-	return repl[:cut_idx]
+def cut_at_first_dot(outputs, running):
+	cut_outputs = []
+
+	for idx, r in enumerate(running):
+		if r:
+			cut_idx = re.search(r'\.', outputs[idx]).span(0)[0]  # postion of first dot
+			cut_outputs.append(outputs[idx][:cut_idx])
+		else:
+			cut_outputs.append(outputs[idx])
+	return np.array(cut_outputs)
+
+def have_stopped(outputs):
+	return np.array(['.' in o for o in outputs])
 
 def inputs_contain_substrings(inputs, outputs, running):
 	inputs_contain_substrings = []
@@ -43,7 +55,7 @@ def inputs_contain_substrings(inputs, outputs, running):
 	for idx, r in enumerate(running):
 		if r:
 			_, substring = outputs[idx].split()
-			inputs_contain_substrings += [cut_at_first_dot(substring) in inputs[idx]]
+			inputs_contain_substrings += [substring in inputs[idx]]
 		else:
 			inputs_contain_substrings += [r]
 
@@ -55,7 +67,7 @@ def replace_substrings_in_inputs(inputs, outputs, running):
 	for idx, r in enumerate(running):
 		if r:
 			result, substring = outputs[idx].split()
-			next_inputs.append(inputs[idx].replace(cut_at_first_dot(substring), result))
+			next_inputs.append(inputs[idx].replace(substring, result))
 		else:
 			next_inputs.append('#')
 		   
@@ -66,12 +78,21 @@ def model_output_to_next_input(cur_input, output, running):
 	chararray_inputs = np.array([x.replace('#', '') for x in cur_input])
 	
 	# check output structure
-	outputs_are_well_formed = contain_space(chararray_outputs)
+	outputs_have_stopped = have_stopped(chararray_outputs)
+	ic((~outputs_have_stopped).sum(), "outputs have not stopped.")
+	running &= outputs_have_stopped
+	ic(running.sum(), "outputs are running.")
+	chararray_outputs = cut_at_first_dot(chararray_outputs, running)
+	outputs_are_well_formed = contain_one_space(chararray_outputs)
+	ic((~outputs_are_well_formed).sum(), "outputs are not well formed.")
 	running &= outputs_are_well_formed
+	ic(running.sum(), "outputs are running.")
 	
 	# check substring in input
 	inputs_do_contain_substrings = inputs_contain_substrings(chararray_inputs, chararray_outputs, running)
+	ic((~inputs_do_contain_substrings).sum(), "outputs have wrong substrings.")
 	running &= inputs_do_contain_substrings
+	ic(running.sum(), "outputs are running.")
 
 	# substitute
 	next_input = replace_substrings_in_inputs(chararray_inputs,
@@ -93,6 +114,7 @@ class ModelWrapper:
 		original_batch = X
 		
 		for cur_nes in range(max_nes):
+			ic(f"~~~ cur_nes {cur_nes} ~~~")
 			# Y = Y if (cur_nes == (max_nes - 1)) else None
 			output = self.model(X, Y=None, tf=tf)
 			next_inputs, running = model_output_to_next_input(lte.x_to_str(X),
@@ -108,7 +130,7 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 	survivors = []
 	
 	for n in range(1, max_nes+1):
-		print(f"--- nesting {n} ---")
+		ic(f"--- nesting {n} ---")
 		values = generator.generate_batch(1, n, **generator_kwargs)
 
 		if isinstance(generator, LTEStepsGenerator):
@@ -124,7 +146,7 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 			output, Y = output[running], Y[running]
 			if output.size() != Y[:, 1:].size():
 				warn_str = f"Outputs shape {output.size()} different from targets shape {Y[:, 1:].size()}. Fixing."
-				print(warn_str)
+				ic(warn_str)
 				warnings.warn(warn_str)
 				output = _fix_output_shape(output, Y[:, 1:], generator)
 
@@ -139,9 +161,8 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 	df['Character Accuracy'] = accuracy_values
 	df['Nesting'] = nesting_values
 
-	ax = sns.barplot(data=df, x='Nesting', y='Character Accuracy', label=plot_label, ax=plot_ax)
-	for i, s in enumerate(survivors):
-		ax.annotate("{:.2f}%".format(s/generator_kwargs['batch_size'] * 100), xy=(i, df.iloc[i, 0]), ha='center')
+	ax = sns.barplot(data=df, x='Nesting', y='Character Accuracy', label=plot_label, ax=plot_ax, color='tab:blue')
+	ax = sns.lineplot(x=range(max_nes), y=[s/generator_kwargs['batch_size'] for s in survivors], marker='o', color='tab:cyan')
 	return ax
 
 if __name__ == "__main__":

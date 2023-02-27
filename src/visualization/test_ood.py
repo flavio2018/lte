@@ -122,7 +122,7 @@ def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, 
 		df[y_axis] = accuracy_values
 	df[dp_name] = dp_values
 	
-	ax = sns.barplot(data=df, x=dp_name, y=y_axis, label=plot_label, ax=plot_ax)
+	ax = sns.barplot(data=df, x=dp_name, y=y_axis, label=plot_label, ax=plot_ax, color='tab:blue')
 	return ax
 
 

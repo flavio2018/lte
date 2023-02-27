@@ -73,7 +73,7 @@ def load_model(cfg, lte):
 	return model
 
 
-def check_output_shape(output, Y):
+def check_output_shape(output, Y, generator):
 	if output.size() != Y[:, 1:].size():
 		warn_str = f"Outputs shape {output.size()} different from targets shape {Y[:, 1:].size()}. Fixing."
 		warnings.warn(warn_str)
@@ -109,12 +109,12 @@ def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, 
 
 			if isinstance(model, UTwRegressionHead):
 				classification_outputs, regression_outputs = output
-				classification_outputs = check_output_shape(classification_outputs, Y)
+				classification_outputs = check_output_shape(classification_outputs, Y, generator)
 				acc = batch_acc(classification_outputs, Y[:, 1:], Y.size(-1), generator)
 				regression_loss = torch.nn.functional.huber_loss(regression_outputs.squeeze(), get_mins_maxs_from_mask(mask))
 				huber_loss_values += [regression_loss.item()]
 			else:
-				output = check_output_shape(output, Y)
+				output = check_output_shape(output, Y, generator)
 				acc = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
 			accuracy_values += [acc.item()]
 			dp_values += [dp_value]

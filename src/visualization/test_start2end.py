@@ -82,7 +82,6 @@ def model_output_to_next_input(cur_input, output, running):
 	logger = logging.getLogger('test_start2end')
 	chararray_outputs = np.array(output)
 	chararray_inputs = np.array([x.replace('#', '') for x in cur_input])
-	logger.info(f"inputs: {chararray_inputs[:50]}")
 	logger.info(f"outputs: {chararray_outputs[:50]}")
 
 	# check output structure
@@ -101,6 +100,8 @@ def model_output_to_next_input(cur_input, output, running):
 	inputs_do_contain_substrings = inputs_contain_substrings(chararray_inputs, chararray_outputs, running)
 	logger.info(f"{(~inputs_do_contain_substrings).sum()} outputs have wrong substrings.")
 	logger.info(chararray_outputs[~inputs_do_contain_substrings])
+	logger.info("Corresponding inputs")
+	logger.info(chararray_inputs[~inputs_do_contain_substrings])
 	running &= inputs_do_contain_substrings
 	logger.info(f"{running.sum()} outputs are running.")
 

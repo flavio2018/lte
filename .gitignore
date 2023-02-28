@@ -13,3 +13,4 @@ src.egg-info/
 download_ckpt.sh
 notebooks/
 scripts/
+logs/

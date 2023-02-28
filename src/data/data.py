@@ -5,6 +5,7 @@ import re
 class Addition:
     def __init__(self):
         self.operands = 2
+        self.used_params = 0
         
     def evaluate(self, values):
         op1, op2 = values
@@ -18,6 +19,7 @@ class Addition:
 class Subtraction:
     def __init__(self):
         self.operands = 2
+        self.used_params = 0
     
     def evaluate(self, values):
         op1, op2 = values
@@ -61,6 +63,7 @@ class IfStatement:
     def __init__(self):
         self.operands = 4
         self.geq = True
+        self.used_params = 0
         
     def evaluate(self, values):
         res1, res2, op1, op2 = values
@@ -86,6 +89,7 @@ class ForLoop:
     def __init__(self, length):
         self.operands = 1
         self.length = length
+        self.used_params = 0
         
     def _set_accumulator(self):
         self.accumulator_code = 'x'
@@ -122,6 +126,7 @@ def generate_sample(length, nesting, split='train', ops='asmif', steps=False):
         
         for i in range(nesting):
             op = ops_subset[np.random.randint(len(ops_subset))]
+            op.used_params = 0
             values = []
             codes = []
 
@@ -130,17 +135,23 @@ def generate_sample(length, nesting, split='train', ops='asmif', steps=False):
                     value, code = stack.pop()
                 else:
                     if isinstance(op, Multiplication) and op.used_params == 0:  # for the first parameter of multiplication
-                        value = np.random.randint(4*(length-1), 4*length)
-                        op.used_params += 1
+                        if steps:
+                            value = np.random.randint(-4*length+1, 4*length)
+                        else:
+                            value = np.random.randint(4*(length-1), 4*length)
                     else:
-                        value = np.random.randint(10**(length-1), 10**length)
+                        if steps:
+                            value = np.random.randint(-10**length+1, 10**length)
+                        else:
+                            value = np.random.randint(10**(length-1), 10**length)
                     code = str(value)
+                op.used_params += 1        
                 values.append(value)
                 codes.append(code)
             new_value = op.evaluate(values)
             new_code = op.generate_code(codes)
             stack.append((new_value, new_code))
-            intermediate_values.append(new_value)           
+            intermediate_values.append(new_value)
         final_value, final_code = stack.pop()
         program += final_code[1:-1]
 

@@ -14,13 +14,18 @@ from model.ut.UniversalTransformer import UniversalTransformer
 from model.test import batch_acc, _fix_output_shape
 from visualization.test_ood import build_generator, load_model
 import warnings
-from icecream import ic
+import logging
 
 
 @hydra.main(config_path="../../conf/local", config_name="test_start2end", version_base='1.2')
 def main(cfg):
 	warnings.filterwarnings('always', category=UserWarning)
-	ic.enable() if cfg.enable_ic else ic.disable()
+	now = dt.now().strftime('%Y-%m-%d_%H:%M')
+	logging.basicConfig(filename=os.path.join(hydra.utils.get_original_cwd(), f'../logs/{now}_test_start2end.txt'),
+            filemode='a',
+            format='%(message)s',
+            datefmt='%H:%M:%S',
+            level=logging.INFO)
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
 	wrapped_model = ModelWrapper(model)
@@ -69,30 +74,35 @@ def replace_substrings_in_inputs(inputs, outputs, running):
 			result, substring = outputs[idx].split()
 			next_inputs.append(inputs[idx].replace(substring, result))
 		else:
-			next_inputs.append('#')
+			next_inputs.append('()')
 		   
 	return next_inputs
 
 def model_output_to_next_input(cur_input, output, running):
+	logger = logging.getLogger('test_start2end')
 	chararray_outputs = np.array(output)
 	chararray_inputs = np.array([x.replace('#', '') for x in cur_input])
-	
+	logger.info(f"inputs: {chararray_inputs[:50]}")
+	logger.info(f"outputs: {chararray_outputs[:50]}")
+
 	# check output structure
 	outputs_have_stopped = have_stopped(chararray_outputs)
-	ic((~outputs_have_stopped).sum(), "outputs have not stopped.")
+	logger.info(f"{(~outputs_have_stopped).sum()} outputs have not stopped.")
 	running &= outputs_have_stopped
-	ic(running.sum(), "outputs are running.")
+	logger.info(f"{running.sum()} outputs are running.")
 	chararray_outputs = cut_at_first_dot(chararray_outputs, running)
 	outputs_are_well_formed = contain_one_space(chararray_outputs)
-	ic((~outputs_are_well_formed).sum(), "outputs are not well formed.")
+	logger.info(f"{(~outputs_are_well_formed).sum()} outputs are not well formed.")
+	logger.info(chararray_outputs[~outputs_are_well_formed])
 	running &= outputs_are_well_formed
-	ic(running.sum(), "outputs are running.")
+	logger.info(f"{running.sum()} outputs are running.")
 	
 	# check substring in input
 	inputs_do_contain_substrings = inputs_contain_substrings(chararray_inputs, chararray_outputs, running)
-	ic((~inputs_do_contain_substrings).sum(), "outputs have wrong substrings.")
+	logger.info(f"{(~inputs_do_contain_substrings).sum()} outputs have wrong substrings.")
+	logger.info(chararray_outputs[~inputs_do_contain_substrings])
 	running &= inputs_do_contain_substrings
-	ic(running.sum(), "outputs are running.")
+	logger.info(f"{running.sum()} outputs are running.")
 
 	# substitute
 	next_input = replace_substrings_in_inputs(chararray_inputs,
@@ -105,6 +115,7 @@ class ModelWrapper:
 	def __init__(self, model):
 		self.model = model
 		self.running = []
+		self.logger = logging.getLogger('test_start2end')
 
 	def __call__(self, X, Y=None, tf=False, max_nes=0):
 		self.model.eval()
@@ -114,7 +125,7 @@ class ModelWrapper:
 		original_batch = X
 		
 		for cur_nes in range(max_nes):
-			ic(f"~~~ cur_nes {cur_nes} ~~~")
+			self.logger.info(f"~~~ cur_nes {cur_nes} ~~~")
 			# Y = Y if (cur_nes == (max_nes - 1)) else None
 			output = self.model(X, Y=None, tf=tf)
 			next_inputs, running = model_output_to_next_input(lte.x_to_str(X),
@@ -128,9 +139,10 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 	accuracy_values = []
 	nesting_values = []
 	survivors = []
-	
+	logger = logging.getLogger('test_start2end')
+
 	for n in range(1, max_nes+1):
-		ic(f"--- nesting {n} ---")
+		logger.info(f"\n--- nesting {n} ---")
 		values = generator.generate_batch(1, n, **generator_kwargs)
 
 		if isinstance(generator, LTEStepsGenerator):
@@ -146,7 +158,7 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 			output, Y = output[running], Y[running]
 			if output.size() != Y[:, 1:].size():
 				warn_str = f"Outputs shape {output.size()} different from targets shape {Y[:, 1:].size()}. Fixing."
-				ic(warn_str)
+				logger.info(warn_str)
 				warnings.warn(warn_str)
 				output = _fix_output_shape(output, Y[:, 1:], generator)
 

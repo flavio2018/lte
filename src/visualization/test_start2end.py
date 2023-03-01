@@ -22,7 +22,7 @@ def main(cfg):
 	warnings.filterwarnings('always', category=UserWarning)
 	now_day = dt.now().strftime('%Y-%m-%d')
 	now_time = dt.now().strftime('%H:%M')
-	logging.basicConfig(filename=os.path.join(hydra.utils.get_original_cwd(), f'../logs/{now_day}_{now_time}_{cfg.ckpt[:-4]}_test_start2end.txt'),
+	logging.basicConfig(filename=os.path.join(hydra.utils.get_original_cwd(), f'../logs/{now_day}/{now_time}_{cfg.ckpt[:-4]}_test_start2end.txt'),
             filemode='a',
             format='%(message)s',
             datefmt='%H:%M:%S',

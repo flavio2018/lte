@@ -140,7 +140,7 @@ def generate_sample(length, nesting, split='train', ops='asmif', steps=False):
                         else:
                             value = np.random.randint(4*(length-1), 4*length)
                     else:
-                        if steps:
+                        if steps and op.used_params == 0:
                             value = np.random.randint(-10**length+1, 10**length)
                         else:
                             value = np.random.randint(10**(length-1), 10**length)

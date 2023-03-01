@@ -32,6 +32,7 @@ def main(cfg):
 
 	ax = test_ood_start2end(wrapped_model, lte, 10, generator_kwargs={'batch_size': cfg.bs,
 																	 'start_to_end': cfg.start_to_end,
+																	 'filtered_s2e': cfg.filtered_s2e,
 																	 'split': 'test',
 																	 'ops': cfg.ops})
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),

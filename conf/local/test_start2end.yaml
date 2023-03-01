@@ -28,5 +28,6 @@ regr_ut: false
 step_generator: false
 same_vocab: false
 simplify_w_value: false  # for compat
-start_to_end: true
+start_to_end: false
+filtered_s2e: true
 ops: 'asmif'

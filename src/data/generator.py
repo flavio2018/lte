@@ -111,7 +111,7 @@ class LTEStepsGenerator(LTEGenerator):
                                ops=ops,
                                steps=True)
 
-    def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', start_to_end=False, simplify=False, simplify_w_value=False, substitute=False):
+    def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', start_to_end=False, filtered_s2e=False, simplify=False, simplify_w_value=False, substitute=False):
         """start_to_end: x = full expression, y = full expression value
            simplify: x = full expression, y = subexpression
            substitute: x = full expression, y = full expression with subexpression substituted by subexpression value
@@ -121,13 +121,20 @@ class LTEStepsGenerator(LTEGenerator):
         samples, targets = [], []
         samples_len, targets_len = [], []
         subexpr_start_end = []
-
+        three_digits_re = re.compile(r'\d{3}')
+        
         for _ in range(batch_size):
             if split == 'test':
                 _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops, batch_size)
                 start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
                 subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
                 if start_to_end:
+                    x, y = steps[0], values[-1]
+                elif filtered_s2e:
+                    while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any():
+                        _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops, batch_size)
+                        start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
+                        subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
                     x, y = steps[0], values[-1]
                 elif simplify:
                     x, y = steps[0], subexpressions[0]
@@ -143,6 +150,12 @@ class LTEStepsGenerator(LTEGenerator):
                 start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
                 subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]    
                 if start_to_end:
+                    x, y = steps[0], values[-1]
+                elif filtered_s2e:
+                    while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any():
+                        _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops, batch_size)
+                        start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
+                        subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
                     x, y = steps[0], values[-1]
                 elif simplify:
                     x, y = steps[rand_idx], subexpressions[rand_idx]

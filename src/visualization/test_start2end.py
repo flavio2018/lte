@@ -111,7 +111,7 @@ def soft_replace_substrings_in_inputs(inputs, outputs, running):
 			result, candidate = outputs[idx].split()
 			lev_distance = levenshteinDistance(substring, candidate)
 			if lev_distance <= 2:
-				next_inputs.append(inputs[idx].replace(substring), result)
+				next_inputs.append(inputs[idx].replace(substring, result))
 			else:
 				next_inputs.append('()')
 		else:

@@ -30,6 +30,7 @@ def main(cfg):
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
 	wrapped_model = ModelWrapper(model)
+	wrapped_model.use_tricks = cfg.tricks
 
 	ax = test_ood_start2end(wrapped_model, lte, 10, generator_kwargs={'batch_size': cfg.bs,
 																	 'start_to_end': cfg.start_to_end,
@@ -71,6 +72,23 @@ def inputs_contain_substrings(inputs, outputs, running):
 
 	return np.array(inputs_contain_substrings)
 
+def inputs_soft_contain_substrings(inputs, outputs, running):
+	inputs_soft_contain_substrings = []
+	substring_re = re.compile(r'[(][a-z0-9+*\-:=<>\[\] ]+[)]')
+
+	for idx, r in enumerate(running):
+		if r:
+			_, substring = outputs[idx].split()
+			inputs_soft_contain_substrings += [substring in inputs[idx]]
+		else:
+			if (np.char.count(outputs[idx], ' ') == 1) and (inputs[idx] != '()'):
+				substring = substring_re.findall(inputs[idx])
+				result, candidate = outputs[idx].split()
+				inputs_soft_contain_substrings += [levenshteinDistance(substring, candidate) <= 2]
+			else:
+				inputs_soft_contain_substrings += [r]
+	return np.array(inputs_soft_contain_substrings)
+
 def replace_substrings_in_inputs(inputs, outputs, running):
 	next_inputs = []
 
@@ -104,24 +122,14 @@ def soft_replace_substrings_in_inputs(inputs, outputs, running):
 
 	for idx, r in enumerate(running):
 		if r:
-			result, substring = outputs[idx].split()
-			next_inputs.append(inputs[idx].replace(substring, result))
-		elif ' ' in outputs[idx]:
-			if inputs[idx] != '()':
-				substring = substring_re.findall(inputs[idx])
-				result, candidate = outputs[idx].split()
-				lev_distance = levenshteinDistance(substring, candidate)
-				if lev_distance <= 2:
-					next_inputs.append(inputs[idx].replace(substring, result))
-				else:
-					next_inputs.append('()')
-			else:
-				next_inputs.append('()')
+			result, output_substring = outputs[idx].split()
+			input_substring = substring_re.findall(inputs[idx])
+			next_inputs.append(inputs[idx].replace(input_substring, result))
 		else:
 			next_inputs.append('()')
 	return next_inputs
 
-def model_output_to_next_input(cur_input, output, output_tensor, running):
+def model_output_to_next_input(cur_input, output, output_tensor, running, use_tricks):
 	chararray_outputs = np.array(output)
 	chararray_inputs = np.array([x.replace('#', '') for x in cur_input])
 
@@ -133,9 +141,10 @@ def model_output_to_next_input(cur_input, output, output_tensor, running):
 	chararray_outputs = cut_at_first_dot(chararray_outputs, running)
 	outputs_are_well_formed = contain_one_space(chararray_outputs)
 	logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed.")
-	chararray_outputs = replace_double_spaces(chararray_outputs)
-	outputs_are_well_formed = contain_one_space(chararray_outputs)
-	logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed after double space correction.")
+	if use_tricks:
+		chararray_outputs = replace_double_spaces(chararray_outputs)
+		outputs_are_well_formed = contain_one_space(chararray_outputs)
+		logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed after double space correction.")
 	logging.info([f"{i} → {o}" for i, o in zip(chararray_inputs[~outputs_are_well_formed & running][:20], 
 		chararray_outputs[~outputs_are_well_formed & running][:20])])
 	logging.info("Top 2 logits for first 10 ill-formed model outputs")
@@ -154,16 +163,19 @@ def model_output_to_next_input(cur_input, output, output_tensor, running):
 	top2_logits, _ = output_tensor[torch.tensor(~inputs_do_contain_substrings & running,
 											 device=output_tensor.device)][:10].topk(k=2, dim=-1)
 	logging.info(top2_logits)
-	running &= inputs_do_contain_substrings
+	if use_tricks:
+		inputs_do_soft_contain_substrings = inputs_soft_contain_substrings(chararray_inputs, chararray_outputs, running)
+		logging.info(f"{(~inputs_do_soft_contain_substrings & running).sum()} outputs have non-softmatching substrings.")
+		running &= inputs_do_soft_contain_substrings
+		next_input = soft_replace_substrings_in_inputs(chararray_inputs,
+													   chararray_outputs,
+													   running)
+	else:
+		running &= inputs_do_contain_substrings
+		next_input = replace_substrings_in_inputs(chararray_inputs,
+												  chararray_outputs,
+												  running)
 	logging.info(f"{running.sum()} outputs are running.")
-
-	# substitute
-	next_input = replace_substrings_in_inputs(chararray_inputs,
-											  chararray_outputs,
-											  running)
-	next_input = soft_replace_substrings_in_inputs(chararray_inputs,
-												   chararray_outputs,
-												   running)
 	return next_input, running
 
 class ModelWrapper:
@@ -171,6 +183,7 @@ class ModelWrapper:
 	def __init__(self, model):
 		self.model = model
 		self.running = []
+		self.use_tricks = False
 
 	def __call__(self, X, Y=None, tf=False, max_nes=0):
 		self.model.eval()
@@ -186,7 +199,8 @@ class ModelWrapper:
 			next_inputs, running = model_output_to_next_input(lte.x_to_str(X),
 															  lte.y_to_str(output),
 															  output,
-															  running)
+															  running,
+															  self.use_tricks)
 			X = lte._build_batch([list(i) for i in next_inputs])
 			self.running.append(running)
 		return lte._build_batch([list(i) + ['.'] for i in next_inputs], y=True)

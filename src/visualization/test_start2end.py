@@ -110,7 +110,7 @@ def soft_replace_substrings_in_inputs(inputs, outputs, running):
 			matched_substring = substring_re.findall(inputs[idx])
 			if not matched_substring:
 				logging.info(inputs[idx])
-			substring = [0]
+			substring = matched_substring[0]
 			result, candidate = outputs[idx].split()
 			lev_distance = levenshteinDistance(substring, candidate)
 			if lev_distance <= 2:

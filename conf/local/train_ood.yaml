@@ -27,6 +27,7 @@ copy_dec: false
 alibi: false
 copy_ut: false
 regr_ut: false
+ckpt: ''
 
 # data
 max_len: 5

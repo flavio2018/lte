@@ -70,6 +70,14 @@ def train_ood(cfg):
         ).to(cfg.device)
     xent = torch.nn.CrossEntropyLoss(reduction="none")
     opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
+
+    if cfg.ckpt:
+        ckpt = torch.load(
+            os.path.join(hydra.utils.get_original_cwd(),
+                f'../models/checkpoints/{cfg.ckpt}'), map_location=cfg.device)
+        model.load_state_dict(ckpt['ut_state_dict'])
+        opt.load_state_dict(ckpt['opt'])
+
     FREQ_WANDB_LOG = np.ceil(cfg.max_iter / 1000)
     wandb.init(
         project="lte",

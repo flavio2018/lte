@@ -83,6 +83,41 @@ def replace_substrings_in_inputs(inputs, outputs, running):
 		   
 	return next_inputs
 
+def levenshteinDistance(s1, s2):
+    if len(s1) > len(s2):
+        s1, s2 = s2, s1
+
+    distances = range(len(s1) + 1)
+    for i2, c2 in enumerate(s2):
+        distances_ = [i2+1]
+        for i1, c1 in enumerate(s1):
+            if c1 == c2:
+                distances_.append(distances[i1])
+            else:
+                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
+        distances = distances_
+    return distances[-1]
+
+def soft_replace_substrings_in_inputs(inputs, outputs):
+	next_inputs = []
+	substring_re = re.compile(r'[(][a-z0-9+*\-:=<>\[\] ]+[)]')
+
+	for idx, r in enumerate(running):
+		if r:
+			result, substring = outputs[idx].split()
+			next_inputs.append(inputs[idx].replace(substring, result))
+		elif ' ' in outputs[idx]:
+			substring = substring_re.findall(inputs[idx])[0]
+			result, candidate = outputs[idx].split()
+			lev_distance = levenshteinDistance(substring, candidate)
+			if lev_distance <= 2:
+				next_inputs.append(inputs[idx].replace(substring), result)
+			else:
+				next_inputs.append('()')
+		else:
+			next_inputs.append('()')
+	return next_inputs
+
 def model_output_to_next_input(cur_input, output, output_tensor, running):
 	chararray_outputs = np.array(output)
 	chararray_inputs = np.array([x.replace('#', '') for x in cur_input])

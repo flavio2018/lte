@@ -107,14 +107,14 @@ def soft_replace_substrings_in_inputs(inputs, outputs, running):
 			result, substring = outputs[idx].split()
 			next_inputs.append(inputs[idx].replace(substring, result))
 		elif ' ' in outputs[idx]:
-			matched_substring = substring_re.findall(inputs[idx])
-			if not matched_substring:
-				logging.info(inputs[idx])
-			substring = matched_substring[0]
-			result, candidate = outputs[idx].split()
-			lev_distance = levenshteinDistance(substring, candidate)
-			if lev_distance <= 2:
-				next_inputs.append(inputs[idx].replace(substring, result))
+			if inputs[idx] != '()':
+				substring = substring_re.findall(inputs[idx])
+				result, candidate = outputs[idx].split()
+				lev_distance = levenshteinDistance(substring, candidate)
+				if lev_distance <= 2:
+					next_inputs.append(inputs[idx].replace(substring, result))
+				else:
+					next_inputs.append('()')
 			else:
 				next_inputs.append('()')
 		else:

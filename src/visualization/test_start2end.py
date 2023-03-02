@@ -92,8 +92,8 @@ def model_output_to_next_input(cur_input, output, output_tensor, running):
 	chararray_outputs = cut_at_first_dot(chararray_outputs, running)
 	outputs_are_well_formed = contain_one_space(chararray_outputs)
 	logging.info(f"{(~outputs_are_well_formed).sum()} outputs are not well formed.")
-	logging.info([f"{i}\t{o}" for i, o in zip(chararray_inputs[~outputs_are_well_formed][:20])], 
-		chararray_outputs[~outputs_are_well_formed][:20])
+	logging.info([f"{i}\t{o}" for i, o in zip(chararray_inputs[~outputs_are_well_formed][:20], 
+		chararray_outputs[~outputs_are_well_formed][:20])])
 	logging.info("Top 2 logits for first 10 ill-formed model outputs")
 	top2_logits, _ = output_tensor[torch.tensor(~outputs_are_well_formed,
 											 device=output_tensor.device)][:10].topk(k=2, dim=-1)
@@ -104,8 +104,8 @@ def model_output_to_next_input(cur_input, output, output_tensor, running):
 	# check substring in input
 	inputs_do_contain_substrings = inputs_contain_substrings(chararray_inputs, chararray_outputs, running)
 	logging.info(f"{(~inputs_do_contain_substrings).sum()} outputs have wrong substrings.")
-	logging.info([f"{i}\t{o}" for i, o in zip(chararray_inputs[~inputs_do_contain_substrings][:20])], 
-		chararray_outputs[~inputs_do_contain_substrings][:20])
+	logging.info([f"{i}\t{o}" for i, o in zip(chararray_inputs[~inputs_do_contain_substrings][:20], 
+		chararray_outputs[~inputs_do_contain_substrings][:20])])
 	running &= inputs_do_contain_substrings
 	logging.info(f"{running.sum()} outputs are running.")
 

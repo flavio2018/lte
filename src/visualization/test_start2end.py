@@ -98,7 +98,7 @@ def levenshteinDistance(s1, s2):
         distances = distances_
     return distances[-1]
 
-def soft_replace_substrings_in_inputs(inputs, outputs):
+def soft_replace_substrings_in_inputs(inputs, outputs, running):
 	next_inputs = []
 	substring_re = re.compile(r'[(][a-z0-9+*\-:=<>\[\] ]+[)]')
 
@@ -158,6 +158,9 @@ def model_output_to_next_input(cur_input, output, output_tensor, running):
 	next_input = replace_substrings_in_inputs(chararray_inputs,
 											  chararray_outputs,
 											  running)
+	next_input = soft_replace_substrings_in_inputs(chararray_inputs,
+												   chararray_outputs,
+												   running)
 	return next_input, running
 
 class ModelWrapper:

@@ -82,7 +82,7 @@ def inputs_soft_contain_substrings(inputs, outputs, running):
 			inputs_soft_contain_substrings += [substring in inputs[idx]]
 		else:
 			if (np.char.count(outputs[idx], ' ') == 1) and (inputs[idx] != '()'):
-				substring = substring_re.findall(inputs[idx])
+				substring = substring_re.findall(inputs[idx])[0]
 				result, candidate = outputs[idx].split()
 				inputs_soft_contain_substrings += [levenshteinDistance(substring, candidate) <= 2]
 			else:

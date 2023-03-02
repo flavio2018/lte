@@ -95,7 +95,7 @@ def model_output_to_next_input(cur_input, output, output_tensor, running):
 	logging.info(f"{(~outputs_are_well_formed).sum()} outputs are not well formed.")
 	logging.info(chararray_outputs[~outputs_are_well_formed])
 	logging.info("Top 2 logits for first 10 ill-formed model outputs")
-	top2_logits = output_tensor[torch.tensor(~outputs_are_well_formed,
+	top2_logits, _ = output_tensor[torch.tensor(~outputs_are_well_formed,
 											 device=output_tensor.device)][:10].topk(k=2, dim=-1)
 	logging.info(top2_logits)
 	running &= outputs_are_well_formed

@@ -42,6 +42,9 @@ def main(cfg):
 def contain_one_space(outputs):
 	return np.char.count(outputs, ' ') == 1
 
+def replace_double_spaces(outputs):
+	return np.char.replace(outputs, '  ', ' ')
+
 def cut_at_first_dot(outputs, running):
 	cut_outputs = []
 
@@ -92,6 +95,9 @@ def model_output_to_next_input(cur_input, output, output_tensor, running):
 	chararray_outputs = cut_at_first_dot(chararray_outputs, running)
 	outputs_are_well_formed = contain_one_space(chararray_outputs)
 	logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed.")
+	chararray_outputs = replace_double_spaces(chararray_outputs)
+	outputs_are_well_formed = contain_one_space(chararray_outputs)
+	logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed after double space correction.")
 	logging.info([f"{i} → {o}" for i, o in zip(chararray_inputs[~outputs_are_well_formed & running][:20], 
 		chararray_outputs[~outputs_are_well_formed & running][:20])])
 	logging.info("Top 2 logits for first 10 ill-formed model outputs")

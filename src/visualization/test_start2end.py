@@ -80,7 +80,7 @@ def replace_substrings_in_inputs(inputs, outputs, running):
 		   
 	return next_inputs
 
-def model_output_to_next_input(cur_input, output, running):
+def model_output_to_next_input(cur_input, output, output_tensor, running):
 	chararray_outputs = np.array(output)
 	chararray_inputs = np.array([x.replace('#', '') for x in cur_input])
 	logging.info(f"outputs: {chararray_outputs[:50]}")
@@ -94,6 +94,9 @@ def model_output_to_next_input(cur_input, output, running):
 	outputs_are_well_formed = contain_one_space(chararray_outputs)
 	logging.info(f"{(~outputs_are_well_formed).sum()} outputs are not well formed.")
 	logging.info(chararray_outputs[~outputs_are_well_formed])
+	logging.info("First 10 ill-formed model outputs")
+	logging.info(output_tensor[torch.tensor(~outputs_are_well_formed,
+											device=output_tensor.device)][:10])
 	running &= outputs_are_well_formed
 	logging.info(f"{running.sum()} outputs are running.")
 	
@@ -131,6 +134,7 @@ class ModelWrapper:
 			output = self.model(X, Y=None, tf=tf)
 			next_inputs, running = model_output_to_next_input(lte.x_to_str(X),
 															  lte.y_to_str(output),
+															  output,
 															  running)
 			X = lte._build_batch([list(i) for i in next_inputs])
 			self.running.append(running)

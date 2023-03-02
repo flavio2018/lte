@@ -78,15 +78,17 @@ def inputs_soft_contain_substrings(inputs, outputs, running):
 
 	for idx, r in enumerate(running):
 		if r:
-			_, substring = outputs[idx].split()
-			inputs_soft_contain_substrings += [substring in inputs[idx]]
-		else:
-			if (np.char.count(outputs[idx], ' ') == 1) and (inputs[idx] != '()'):
-				substring = substring_re.findall(inputs[idx])[0]
-				result, candidate = outputs[idx].split()
-				inputs_soft_contain_substrings += [levenshteinDistance(substring, candidate) <= 2]
+			_, candidate = outputs[idx].split()
+			if candidate in inputs[idx]:
+				inputs_soft_contain_substrings += [True]
 			else:
-				inputs_soft_contain_substrings += [r]
+				input_substring = substring_re.findall(inputs[idx])[0]
+				if levenshteinDistance(input_substring, candidate) <= 2:
+					inputs_soft_contain_substrings += [True]
+				else:
+					inputs_soft_contain_substrings += [False]
+		else:
+			inputs_soft_contain_substrings += [r]
 	return np.array(inputs_soft_contain_substrings)
 
 def replace_substrings_in_inputs(inputs, outputs, running):

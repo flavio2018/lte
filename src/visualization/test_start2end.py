@@ -123,7 +123,7 @@ def soft_replace_substrings_in_inputs(inputs, outputs, running):
 	for idx, r in enumerate(running):
 		if r:
 			result, output_substring = outputs[idx].split()
-			input_substring = substring_re.findall(inputs[idx])
+			input_substring = substring_re.findall(inputs[idx])[0]
 			next_inputs.append(inputs[idx].replace(input_substring, result))
 		else:
 			next_inputs.append('()')

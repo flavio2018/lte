@@ -99,13 +99,12 @@ class LTEStepsGenerator(LTEGenerator):
         self.y_to_tensor_trans = ToTensor(padding_value=self.y_vocab[_PAD])
         self.device = torch.device(device)
         self.hash_split = hash_split
+        self.sample2split = None
     
     def load_sample2split(self, base_path):
         if not self.hash_split:
             with open(os.path.join(base_path, "../data/new_split/sample2split.pickle"), "rb") as f:
                 self.sample2split = pickle.load(f)
-        else:
-            self.sample2split = None
 
     def _generate_sample_naive(self, length, nesting, split, ops, batch_size):
         return generate_sample(length=length,

@@ -100,7 +100,7 @@ class LTEStepsGenerator(LTEGenerator):
         self.device = torch.device(device)
         self.hash_split = hash_split
     
-    def load_sample2split(base_path):
+    def load_sample2split(self, base_path):
         if not self.hash_split:
             with open(os.path.join(base_path, "../data/new_split/sample2split.pickle"), "rb") as f:
                 self.sample2split = pickle.load(f)

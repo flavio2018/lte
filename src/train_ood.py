@@ -26,6 +26,7 @@ def train_ood(cfg):
             "substitute": cfg.substitute,
             "split": "train",
         }
+        lte.load_sample2split(hydra.utils.get_original_cwd())
     else:
         lte = LTEGenerator(cfg.device)
         lte_kwargs = {

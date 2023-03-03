@@ -2,6 +2,7 @@ from collections import OrderedDict
 import string
 import re
 import pickle
+import os
 import torch
 import torch.nn.functional as F
 from torchtext.vocab import vocab
@@ -97,8 +98,11 @@ class LTEStepsGenerator(LTEGenerator):
         self.x_to_tensor_trans = ToTensor(padding_value=self.x_vocab[_PAD])
         self.y_to_tensor_trans = ToTensor(padding_value=self.y_vocab[_PAD])
         self.device = torch.device(device)
-        if not hash_split:
-            with open("../data/new_split/sample2split.pickle", "rb") as f:
+        self.hash_split = hash_split
+    
+    def load_sample2split(base_path):
+        if not self.hash_split:
+            with open(os.path.join(base_path, "../data/new_split/sample2split.pickle"), "rb") as f:
                 self.sample2split = pickle.load(f)
         else:
             self.sample2split = None

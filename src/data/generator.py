@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import string
 import re
+import pickle
 import torch
 import torch.nn.functional as F
 from torchtext.vocab import vocab
@@ -74,7 +75,7 @@ class LTEGenerator:
 
 
 class LTEStepsGenerator(LTEGenerator):
-    def __init__(self, device, same_vocab=False):
+    def __init__(self, device, same_vocab=False, hash_split=True):
         super().__init__(device)
         vocab_chars = string.ascii_lowercase + string.digits + '()%+*-=<>[]: '
         self.same_vocab = same_vocab
@@ -96,20 +97,27 @@ class LTEStepsGenerator(LTEGenerator):
         self.x_to_tensor_trans = ToTensor(padding_value=self.x_vocab[_PAD])
         self.y_to_tensor_trans = ToTensor(padding_value=self.y_vocab[_PAD])
         self.device = torch.device(device)
+        if not hash_split:
+            with open("../data/new_split/sample2split.pickle", "rb") as f:
+                self.sample2split = pickle.load(f)
+        else:
+            self.sample2split = None
 
     def _generate_sample_naive(self, length, nesting, split, ops, batch_size):
         return generate_sample(length=length,
                                nesting=nesting,
                                split=split,
                                ops=ops,
-                               steps=True)
+                               steps=True,
+                               sample2split=self.sample2split)
 
     def _generate_sample(self, max_length, max_nesting, split, ops, batch_size):
         return generate_sample(length=torch.randint(1, max_length+1, (1,)).item(),
                                nesting=torch.randint(1, max_nesting+1, (1,)).item(),
                                split=split,
                                ops=ops,
-                               steps=True)
+                               steps=True,
+                               sample2split=self.sample2split)
 
     def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', start_to_end=False, filtered_s2e=False, simplify=False, simplify_w_value=False, substitute=False):
         """start_to_end: x = full expression, y = full expression value
@@ -147,6 +155,8 @@ class LTEStepsGenerator(LTEGenerator):
             else:
                 _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
                 rand_idx = torch.randint(0, len(steps)-1, (1,)).item()
+                if self.sample2split is not None:
+                    rand_idx = 0
                 start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
                 subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]    
                 if start_to_end:

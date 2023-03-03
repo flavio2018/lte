@@ -107,7 +107,7 @@ class ForLoop:
         return "(x=" + codes[0] + "for[" + str(self.num_loops) + "]" + "x+=" + str(self.accumulator_value) + ")"
 
 
-def generate_sample(length, nesting, split='train', ops='asmif', steps=False):
+def generate_sample(length, nesting, split='train', ops='asmif', steps=False, sample2split=None):
     program_split = ''
     
     while(program_split != split):
@@ -153,15 +153,21 @@ def generate_sample(length, nesting, split='train', ops='asmif', steps=False):
             stack.append((new_value, new_code))
             intermediate_values.append(new_value)
         final_value, final_code = stack.pop()
-        program += final_code[1:-1]
+        program += final_code
 
-        program_hash = hash(program)
-        if program_hash % 3 == 0:
-            program_split = 'train'
-        elif program_hash % 3 == 1:
-            program_split = 'valid'
+        if sample2split is None:
+            program_hash = hash(program)
+            if program_hash % 3 == 0:
+                program_split = 'train'
+            elif program_hash % 3 == 1:
+                program_split = 'valid'
+            else:
+                program_split = 'test'
         else:
-            program_split = 'test'
+            try:
+                program_split = sample2split[program]
+            except KeyError:
+                    program_split = 'train' if nesting <= 2 else 'test'
 
     solution_steps = get_solution_steps(new_code, intermediate_values)
 

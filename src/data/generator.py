@@ -163,16 +163,14 @@ class LTEStepsGenerator(LTEGenerator):
                     x, y = steps[0], values[0]
             else:
                 _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
-                rand_idx = torch.randint(0, len(steps)-1, (1,)).item()
-                if self.sample2split is not None:
-                    rand_idx = 0
+                rand_idx = 0 if self.sample2split is not None else torch.randint(0, len(steps)-1, (1,)).item()
                 start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
                 subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]    
                 if start_to_end:
                     x, y = steps[0], values[-1]
                 elif filtered_s2e:
                     while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any():
-                        _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops, batch_size)
+                        _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
                         start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
                         subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
                     x, y = steps[0], values[-1]
@@ -182,8 +180,8 @@ class LTEStepsGenerator(LTEGenerator):
                     x, y = steps[rand_idx], f"{values[rand_idx]} {subexpressions[rand_idx]}"
                 elif filtered_swv:
                     while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any():
-                        _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops, batch_size)
-                        rand_idx = torch.randint(0, len(steps)-1, (1,)).item()
+                        _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
+                        rand_idx = 0 if self.sample2split is not None else torch.randint(0, len(steps)-1, (1,)).item()
                         start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
                         subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
                     x, y = steps[rand_idx], f"{values[rand_idx]} {subexpressions[rand_idx]}"

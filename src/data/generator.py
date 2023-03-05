@@ -181,6 +181,7 @@ class LTEStepsGenerator(LTEGenerator):
                 elif filtered_swv:
                     while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any():
                         _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
+                        print(steps)
                         rand_idx = 0 if self.sample2split is not None else torch.randint(0, len(steps)-1, (1,)).item()
                         start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
                         subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]

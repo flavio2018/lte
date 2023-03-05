@@ -122,7 +122,7 @@ class LTEStepsGenerator(LTEGenerator):
                                steps=True,
                                sample2split=self.sample2split)
 
-    def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', start_to_end=False, filtered_s2e=False, simplify=False, simplify_w_value=False, substitute=False):
+    def generate_batch(self, max_length, max_nesting, batch_size, split='train', ops='asmif', start_to_end=False, filtered_s2e=False, simplify=False, simplify_w_value=False, filtered_swv=False, substitute=False):
         """start_to_end: x = full expression, y = full expression value
            simplify: x = full expression, y = subexpression
            substitute: x = full expression, y = full expression with subexpression substituted by subexpression value

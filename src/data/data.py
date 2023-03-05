@@ -109,7 +109,6 @@ class ForLoop:
 
 def generate_sample(length, nesting, split='train', ops='asmif', steps=False, sample2split=None):
     program_split = ''
-    print(split)
 
     while(program_split != split):
         stack = []

@@ -38,6 +38,7 @@ def build_generator(cfg):
 		lte_kwargs = {
 			"batch_size": cfg.bs,
 			"simplify_w_value": cfg.simplify_w_value,
+			"filtered_swv": cfg.filtered_swv,
 			"split": "test",
 			"ops": cfg.ops,
 		}

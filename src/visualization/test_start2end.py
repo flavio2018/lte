@@ -245,7 +245,7 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 	df['Nesting'] = nesting_values
 
 	ax = sns.barplot(data=df, x='Nesting', y='Character Accuracy', label=plot_label, ax=plot_ax, color='tab:blue')
-	ax = sns.lineplot(x=range(max_nes), y=[s/generator_kwargs['batch_size'] for s in survivors], marker='o', color='tab:cyan')
+	ax = sns.lineplot(x=range(3, max_nes+1), y=[s/generator_kwargs['batch_size'] for s in survivors], marker='o', color='tab:cyan')
 	return ax
 
 if __name__ == "__main__":

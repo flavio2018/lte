@@ -106,7 +106,7 @@ class LTEStepsGenerator(LTEGenerator):
             with open(os.path.join(base_path, "../data/new_split/sample2split.pickle"), "rb") as f:
                 self.sample2split = pickle.load(f)
 
-    def _generate_sample_naive(self, length, nesting, split, ops, batch_size):
+    def _generate_sample_naive(self, length, nesting, split, ops):
         return generate_sample(length=length,
                                nesting=nesting,
                                split=split,
@@ -114,7 +114,7 @@ class LTEStepsGenerator(LTEGenerator):
                                steps=True,
                                sample2split=self.sample2split)
 
-    def _generate_sample(self, max_length, max_nesting, split, ops, batch_size):
+    def _generate_sample(self, max_length, max_nesting, split, ops):
         return generate_sample(length=torch.randint(1, max_length+1, (1,)).item(),
                                nesting=torch.randint(1, max_nesting+1, (1,)).item(),
                                split=split,
@@ -133,36 +133,40 @@ class LTEStepsGenerator(LTEGenerator):
         samples_len, targets_len = [], []
         subexpr_start_end = []
         three_digits_re = re.compile(r'\d{3}')
+        Xs = set()
         
         for _ in range(batch_size):
             if split == 'test':
-                _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops, batch_size)
-                start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
-                subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
-                if start_to_end:
-                    x, y = steps[0], values[-1]
-                elif filtered_s2e:
-                    while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any():
-                        _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops, batch_size)
-                        start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
-                        subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
-                    x, y = steps[0], values[-1]
-                elif simplify:
-                    x, y = steps[0], subexpressions[0]
-                elif simplify_w_value:
-                    x, y = steps[0], f"{values[0]} {subexpressions[0]}"
-                elif filtered_swv:
-                    while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any() and max_length <= 2:
-                        _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops, batch_size)
-                        start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
-                        subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
-                    x, y = steps[0], f"{values[0]} {subexpressions[0]}"
-                elif substitute:
-                    x, y = steps[0], self._substitute_subexpression(steps[0], values[0])
-                else:
-                    x, y = steps[0], values[0]
+                x_in_Xs = True
+                while x_in_Xs:
+                    _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops)
+                    start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
+                    subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
+                    if start_to_end:
+                        x, y = steps[0], values[-1]
+                    elif filtered_s2e:
+                        while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any():
+                            _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops)
+                            start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
+                            subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
+                        x, y = steps[0], values[-1]
+                    elif simplify:
+                        x, y = steps[0], subexpressions[0]
+                    elif simplify_w_value:
+                        x, y = steps[0], f"{values[0]} {subexpressions[0]}"
+                    elif filtered_swv:
+                        while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any() and max_length <= 2:
+                            _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops)
+                            start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
+                            subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
+                        x, y = steps[0], f"{values[0]} {subexpressions[0]}"
+                    elif substitute:
+                        x, y = steps[0], self._substitute_subexpression(steps[0], values[0])
+                    else:
+                        x, y = steps[0], values[0]
+                    x_in_Xs = x in Xs
             else:
-                _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
+                _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops)
                 rand_idx = 0 if self.sample2split is not None else torch.randint(0, len(steps)-1, (1,)).item()
                 start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
                 subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]    
@@ -170,7 +174,7 @@ class LTEStepsGenerator(LTEGenerator):
                     x, y = steps[0], values[-1]
                 elif filtered_s2e:
                     while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any():
-                        _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
+                        _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops)
                         start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
                         subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
                     x, y = steps[0], values[-1]
@@ -180,7 +184,7 @@ class LTEStepsGenerator(LTEGenerator):
                     x, y = steps[rand_idx], f"{values[rand_idx]} {subexpressions[rand_idx]}"
                 elif filtered_swv:
                     while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any():
-                        _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops, batch_size)
+                        _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops)
                         rand_idx = 0 if self.sample2split is not None else torch.randint(0, len(steps)-1, (1,)).item()
                         start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
                         subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]

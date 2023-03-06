@@ -143,7 +143,7 @@ def generate_sample(length, nesting, split='train', ops='asmif', steps=False, sa
                         if steps and op.used_params == 0:
                             value = np.random.randint(-10**length+1, 10**length)
                         else:
-                            value = np.random.randint(10**(length-1), 10**length)
+                            value = np.random.randint(0, 10**length)  # include 1-digit numbers as 2nd operand
                     code = str(value)
                 op.used_params += 1        
                 values.append(value)

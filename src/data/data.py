@@ -134,16 +134,10 @@ def generate_sample(length, nesting, split='train', ops='asmif', steps=False, sa
                 if stack:
                     value, code = stack.pop()
                 else:
-                    if isinstance(op, Multiplication) and op.used_params == 0:  # for the first parameter of multiplication
-                        if steps:
-                            value = np.random.randint(-4*length+1, 4*length)
-                        else:
-                            value = np.random.randint(4*(length-1), 4*length)
+                    if steps and op.used_params == 0:
+                        value = np.random.randint(-10**length+1, 10**length)
                     else:
-                        if steps and op.used_params == 0:
-                            value = np.random.randint(-10**length+1, 10**length)
-                        else:
-                            value = np.random.randint(0, 10**length)  # include 1-digit numbers as 2nd operand
+                        value = np.random.randint(0, 10**length)  # include 1-digit numbers as 2nd operand
                     code = str(value)
                 op.used_params += 1        
                 values.append(value)

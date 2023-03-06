@@ -212,7 +212,7 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 	nesting_values = []
 	survivors = []
 
-	for n in range(1, max_nes+1):
+	for n in range(3, max_nes+1):
 		logging.info(f"\n--- nesting {n} ---")
 		values = generator.generate_batch(1, n, **generator_kwargs)
 

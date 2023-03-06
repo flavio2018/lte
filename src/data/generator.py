@@ -165,6 +165,7 @@ class LTEStepsGenerator(LTEGenerator):
                     else:
                         x, y = steps[0], values[0]
                     x_in_Xs = x in Xs
+                Xs.add(x)
             else:
                 _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops)
                 rand_idx = 0 if self.sample2split is not None else torch.randint(0, len(steps)-1, (1,)).item()

@@ -37,6 +37,7 @@ ops: 'asmif'
 simplify: false
 simplify_w_value: false
 filtered_swv: false
+filtered_s2e: false
 substitute: false
 same_vocab: false
 hash_split: true

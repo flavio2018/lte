@@ -41,7 +41,7 @@ def main(cfg):
 		f"../reports/figures/{cfg.ckpt[:-4]}_start2end.pdf"))	
 
 def contain_one_space(outputs):
-	return (np.char.count(outputs, ' ') == 1) and (outputs[0] != ' ') and (outputs[-1] != ' ')
+	return (np.char.count(outputs, ' ', start=1, end=-1) == 1)
 
 def replace_double_spaces(outputs):
 	return np.char.replace(outputs, '  ', ' ')

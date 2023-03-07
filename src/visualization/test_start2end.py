@@ -148,9 +148,10 @@ def model_output_to_next_input(cur_input, output, output_tensor, running, use_tr
 		chararray_outputs = replace_double_spaces(chararray_outputs)
 		outputs_are_well_formed = contain_one_space(chararray_outputs)
 		logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed after double space correction.")
-	well_formed_running_inputs = chararray_inputs[~outputs_are_well_formed & running]
-	log_idx = np.random.choice(well_formed_running_inputs.shape[0], size=20, replace=False)
-	logging.info('\n'.join([f"{i} → {o}" for i, o in zip(well_formed_running_inputs[log_idx], 
+	notwell_formed_running_inputs = chararray_inputs[~outputs_are_well_formed & running]
+	num_log_idx = 20 if notwell_formed_running_inputs.shape[0] > 20 else notwell_formed_running_inputs.shape[0]
+	log_idx = np.random.choice(notwell_formed_running_inputs.shape[0], size=num_log_idx, replace=False)
+	logging.info('\n'.join([f"{i} → {o}" for i, o in zip(notwell_formed_running_inputs[log_idx], 
 		chararray_outputs[~outputs_are_well_formed & running][log_idx])]))
 	logging.info("Top 2 logits for first 10 ill-formed model outputs")
 	top2_logits, _ = output_tensor[torch.tensor(~outputs_are_well_formed & running,
@@ -162,9 +163,10 @@ def model_output_to_next_input(cur_input, output, output_tensor, running, use_tr
 	# check substring in input
 	inputs_do_contain_substrings = inputs_contain_substrings(chararray_inputs, chararray_outputs, running)
 	logging.info(f"{(~inputs_do_contain_substrings & running).sum()} outputs have wrong substrings.")
-	inputs_with_substring_running = chararray_inputs[~inputs_do_contain_substrings & running]
-	log_idx = np.random.choice(inputs_with_substring_running.shape[0], size=20, replace=False)
-	logging.info('\n'.join([f"{i} → {o}" for i, o in zip(inputs_with_substring_running[log_idx], 
+	inputs_without_substring_running = chararray_inputs[~inputs_do_contain_substrings & running]
+	num_log_idx = 20 if inputs_without_substring_running.shape[0] > 20 else inputs_without_substring_running.shape[0]
+	log_idx = np.random.choice(inputs_without_substring_running.shape[0], size=num_log_idx, replace=False)
+	logging.info('\n'.join([f"{i} → {o}" for i, o in zip(inputs_without_substring_running[log_idx], 
 		chararray_outputs[~inputs_do_contain_substrings & running][log_idx])]))
 	logging.info("Top 2 logits for first 10 no-substring model outputs")
 	top2_logits, _ = output_tensor[torch.tensor(~inputs_do_contain_substrings & running,

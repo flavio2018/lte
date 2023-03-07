@@ -21,13 +21,15 @@ def main(cfg):
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
 	metric = 'characc'
-	ax = test_ood(model, lte, 'nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs)
+	ax, df = test_ood(model, lte, 'nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs)
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/figures/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.pdf"))
+	df.to_latex(os.path.join(hydra.utils.get_original_cwd(),
+		f"../reports/tables/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.tex"))	
 	if isinstance(model, UTwRegressionHead):
 		plt.clf()
 		metric = 'huberloss'
-		ax = test_ood(model, lte, 'nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs, regr=True)
+		ax, _ = test_ood(model, lte, 'nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs, regr=True)
 		plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 			f"../reports/figures/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.pdf"))
 
@@ -130,7 +132,7 @@ def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, 
 	df[dp_name] = dp_values
 	
 	ax = sns.barplot(data=df, x=dp_name, y=y_axis, label=plot_label, ax=plot_ax, color='tab:blue')
-	return ax
+	return ax, df
 
 
 if __name__ == '__main__':

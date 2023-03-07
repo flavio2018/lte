@@ -33,13 +33,15 @@ def main(cfg):
 	wrapped_model.use_tricks = cfg.tricks
 	tricks = '_tricks' if cfg.tricks else ''
 
-	ax = test_ood_start2end(wrapped_model, lte, 10, generator_kwargs={'batch_size': cfg.bs,
+	ax, df = test_ood_start2end(wrapped_model, lte, 10, generator_kwargs={'batch_size': cfg.bs,
 																	 'start_to_end': cfg.start_to_end,
 																	 'filtered_s2e': cfg.filtered_s2e,
 																	 'split': 'test',
 																	 'ops': cfg.ops})
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
-		f"../reports/figures/{cfg.ckpt[:-4]}_start2end{tricks}.pdf"))	
+		f"../reports/figures/{cfg.ckpt[:-4]}_start2end{tricks}.pdf"))
+	df.to_latex(os.path.join(hydra.utils.get_original_cwd(),
+		f"../reports/tables/{cfg.ckpt[:-4]}_start2end{tricks}.tex"))	
 
 def contain_one_space(outputs):
 	return (np.char.count(outputs, ' ', start=1, end=-1) == 1)
@@ -253,7 +255,7 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 
 	ax = sns.barplot(data=df, x='Nesting', y='Character Accuracy', label=plot_label, ax=plot_ax, color='tab:blue')
 	ax = sns.lineplot(x=range(max_nes-2), y=[s/generator_kwargs['batch_size'] for s in survivors], marker='o', color='tab:cyan')
-	return ax
+	return ax, df
 
 if __name__ == "__main__":
 	main()

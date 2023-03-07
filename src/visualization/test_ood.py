@@ -24,7 +24,7 @@ def main(cfg):
 	ax, df = test_ood(model, lte, 'nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs)
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/figures/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.pdf"))
-	df.to_latex(os.path.join(hydra.utils.get_original_cwd(),
+	df["Character Accuracy"].T.to_latex(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/tables/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.tex"))	
 	if isinstance(model, UTwRegressionHead):
 		plt.clf()

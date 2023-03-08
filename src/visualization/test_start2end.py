@@ -159,6 +159,7 @@ class ModelWrapper:
 
 	def model_output_to_next_input(self, X, output_tensor, running):
 		lte = self.model.generator
+		y_vocab_itos = lte.y_vocab.get_itos()
 		cur_input, output = lte.x_to_str(X), lte.y_to_str(output_tensor)
 		chararray_outputs = np.array(output)
 		chararray_inputs = np.array([x.replace('#', '') for x in cur_input])
@@ -189,8 +190,7 @@ class ModelWrapper:
 		logging.info("Top 2 logits for first 10 ill-formed model outputs")
 		logging.info(top2_logits)
 		logging.info("Top 2 predictions")
-		logging.info(top2_idx)
-		# logging.info(top2_idx.cpu().apply_(lte.y_vocab.lookup_token))
+		logging.info(top2_idx.cpu().apply_(lambda x: y_vocab_itos[x]))
 		running &= outputs_are_well_formed
 		logging.info(f"{running.sum()} outputs are running.")
 		

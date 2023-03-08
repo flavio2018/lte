@@ -169,6 +169,7 @@ class ModelWrapper:
 		outputs_have_stopped = have_stopped(chararray_outputs)
 		running &= outputs_have_stopped
 		chararray_outputs = cut_at_first_dot(chararray_outputs, running)
+		max_cut_length = max([len(o) for o in chararray_outputs])
 		
 		logging.info(f"{(~outputs_have_stopped).sum()} outputs have not stopped.")
 		logging.info(f"{running.sum()} outputs are running.")
@@ -190,7 +191,7 @@ class ModelWrapper:
 			logging.info('\n'.join([f"{i} → {o}"
 				for i, o in zip(notwell_formed_running_inputs[log_idx], chararray_outputs[~outputs_are_well_formed & running][log_idx])]))
 			logging.info("\nTop 2 logits & predictions for first 10 ill-formed model outputs")
-			logging.info('\n\n'.join([f"{logits}\n{idx}"
+			logging.info('\n\n'.join([f"{logits[:max_cut_length]}\n{idx[:max_cut_length]}"
 				for logits, idx in zip(top2_logits.cpu().numpy().round(decimals=2), itos_f(top2_idx.cpu().numpy()))]))
 			
 		running &= outputs_are_well_formed
@@ -209,7 +210,7 @@ class ModelWrapper:
 			logging.info('\n'.join([f"{i} → {o}"
 				for i, o in zip(inputs_without_substring_running[log_idx], chararray_outputs[~inputs_do_contain_substrings & running][log_idx])]))
 			logging.info("\nTop 2 logits & predictions for first 10 no-substring model outputs")
-			logging.info('\n\n'.join([f"{logits}\n{idx}"
+			logging.info('\n\n'.join([f"{logits[:max_cut_length]}\n{idx[:max_cut_length]}"
 				for logits, idx in zip(top2_logits.cpu().numpy().round(decimals=2), itos_f(top2_idx.cpu().numpy()))]))
 		
 		if self.use_tricks:

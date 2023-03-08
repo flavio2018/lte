@@ -189,7 +189,7 @@ class ModelWrapper:
 		logging.info('\n'.join([f"{i} → {o}"
 			for i, o in zip(notwell_formed_running_inputs[log_idx], chararray_outputs[~outputs_are_well_formed & running][log_idx])]))
 		logging.info("Top 2 logits for first 10 ill-formed model outputs")
-		logging.info(top2_logits)
+		logging.info(top2_logits.cpu().numpy().round(decimals=2))
 		logging.info("Top 2 predictions")
 		logging.info(itos_f(top2_idx.cpu().numpy()))
 		running &= outputs_are_well_formed
@@ -207,7 +207,8 @@ class ModelWrapper:
 		logging.info('\n'.join([f"{i} → {o}"
 			for i, o in zip(inputs_without_substring_running[log_idx], chararray_outputs[~inputs_do_contain_substrings & running][log_idx])]))
 		logging.info("Top 2 logits for first 10 no-substring model outputs")
-		logging.info(top2_logits)
+		logging.info(top2_logits.cpu().numpy().round(decimals=2))
+		logging.info(itos_f(top2_idx.cpu().numpy()))
 		
 		if self.use_tricks:
 			inputs_do_soft_contain_substrings = inputs_soft_contain_substrings(chararray_inputs, chararray_outputs, running)

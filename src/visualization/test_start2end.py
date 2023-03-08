@@ -24,10 +24,10 @@ def main(cfg):
 	now_day = dt.now().strftime('%Y-%m-%d')
 	now_time = dt.now().strftime('%H:%M')
 	logging.basicConfig(filename=os.path.join(hydra.utils.get_original_cwd(), f'../logs/{now_day}_{now_time}_{cfg.ckpt[:-4]}_test_start2end.txt'),
-            filemode='a',
-            format='%(message)s',
-            datefmt='%H:%M:%S',
-            level=logging.INFO)
+			filemode='a',
+			format='%(message)s',
+			datefmt='%H:%M:%S',
+			level=logging.INFO)
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
 	wrapped_model = ModelWrapper(model)
@@ -108,19 +108,19 @@ def replace_substrings_in_inputs(inputs, outputs, running):
 	return next_inputs
 
 def levenshteinDistance(s1, s2):
-    if len(s1) > len(s2):
-        s1, s2 = s2, s1
+	if len(s1) > len(s2):
+		s1, s2 = s2, s1
 
-    distances = range(len(s1) + 1)
-    for i2, c2 in enumerate(s2):
-        distances_ = [i2+1]
-        for i1, c1 in enumerate(s1):
-            if c1 == c2:
-                distances_.append(distances[i1])
-            else:
-                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
-        distances = distances_
-    return distances[-1]
+	distances = range(len(s1) + 1)
+	for i2, c2 in enumerate(s2):
+		distances_ = [i2+1]
+		for i1, c1 in enumerate(s1):
+			if c1 == c2:
+				distances_.append(distances[i1])
+			else:
+				distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
+		distances = distances_
+	return distances[-1]
 
 def soft_replace_substrings_in_inputs(inputs, outputs, running):
 	next_inputs = []
@@ -162,28 +162,28 @@ class ModelWrapper:
 		return lte._build_batch([list(i) + ['.'] for i in next_inputs], y=True)
 
 	def fwd_dfa(self, X, tf=False):
-        it, max_it = 0, 100
+		it, max_it = 0, 100
 		lte = self.model.generator
 		
 		encoding, src_mask = self.model._test_fwd_encoder_step(X)
-        stopped = torch.zeros(X.size(0)).type(torch.BoolTensor).to(X.device)
-        Y_pred_v = torch.tile(F.one_hot(torch.tensor([lte.y_vocab['?']]), num_classes=len(lte.y_vocab)), dims=(X.size(0), 1, 1)).type(torch.FloatTensor).to(X.device)
-        output = Y_pred_v
+		stopped = torch.zeros(X.size(0)).type(torch.BoolTensor).to(X.device)
+		Y_pred_v = torch.tile(F.one_hot(torch.tensor([lte.y_vocab['?']]), num_classes=len(lte.y_vocab)), dims=(X.size(0), 1, 1)).type(torch.FloatTensor).to(X.device)
+		output = Y_pred_v
 		
 		while not stopped.all() and (it < max_it):
-            it += 1
-        	Y_pred = self.model._test_fwd_decode_step(encoding, src_mask, Y_pred_v)
-            output = torch.concat([output, Y_pred], dim=1)     
+			it += 1
+			Y_pred = self.model._test_fwd_decode_step(encoding, src_mask, Y_pred_v)
+			output = torch.concat([output, Y_pred], dim=1)     
 
-        	# logits to tokens conversion 
-        	pred_idx = Y_pred.argmax(-1) 
-            Y_sample = F.one_hot(pred_idx, num_classes=len(self.generator.y_vocab)).type(torch.FloatTensor).to(X.device)
+			# logits to tokens conversion 
+			pred_idx = Y_pred.argmax(-1) 
+			Y_sample = F.one_hot(pred_idx, num_classes=len(self.generator.y_vocab)).type(torch.FloatTensor).to(X.device)
 
-            # equivalent to no-dfa
-            pred_idx = Y_pred.argmax(-1) 
-            Y_pred_v = torch.concat([Y_pred_v, Y_sample], dim=1)
-            stopped = torch.logical_or((pred_idx.squeeze() == EOS_idx), stopped)
-        return output[:, 1:, :]
+			# equivalent to no-dfa
+			pred_idx = Y_pred.argmax(-1) 
+			Y_pred_v = torch.concat([Y_pred_v, Y_sample], dim=1)
+			stopped = torch.logical_or((pred_idx.squeeze() == EOS_idx), stopped)
+		return output[:, 1:, :]
 
 	def model_output_to_next_input(self, X, output_tensor, running):
 		lte = self.model.generator

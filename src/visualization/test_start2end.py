@@ -12,6 +12,7 @@ from data.generator import LTEGenerator, LTEStepsGenerator, get_mins_maxs_from_m
 from model.regression_tran import UTwRegressionHead
 from model.ut.UniversalTransformer import UniversalTransformer
 from model.test import batch_acc, _fix_output_shape
+from output_dfa import output_dfa
 from visualization.test_ood import build_generator, load_model
 import warnings
 import logging
@@ -140,22 +141,49 @@ class ModelWrapper:
 		self.model = model
 		self.running = []
 		self.use_tricks = False
+		self.use_dfa = False
 
 	def __call__(self, X, Y=None, tf=False, max_nes=0):
 		self.model.eval()
 		self.running = []
 		lte = self.model.generator
 		running = np.array([True]*X.size(0))
-		original_batch = X
 		
 		for cur_nes in range(max_nes):
 			logging.info(f"\n~~~ cur_nes {cur_nes} ~~~")
 			# Y = Y if (cur_nes == (max_nes - 1)) else None
-			output = self.model(X, Y=None, tf=tf)
+			if self.use_dfa:
+				output = self.fwd_dfa(X, tf=tf)
+			else:
+				output = self.model(X, Y=None, tf=tf)
 			next_inputs, running = self.model_output_to_next_input(X, output, running)
 			X = lte._build_batch([list(i) for i in next_inputs])
 			self.running.append(running)
 		return lte._build_batch([list(i) + ['.'] for i in next_inputs], y=True)
+
+	def fwd_dfa(self, X, tf=False):
+        it, max_it = 0, 100
+		lte = self.model.generator
+		
+		encoding, src_mask = self.model._test_fwd_encoder_step(X)
+        stopped = torch.zeros(X.size(0)).type(torch.BoolTensor).to(X.device)
+        Y_pred_v = torch.tile(F.one_hot(torch.tensor([lte.y_vocab['?']]), num_classes=len(lte.y_vocab)), dims=(X.size(0), 1, 1)).type(torch.FloatTensor).to(X.device)
+        output = Y_pred_v
+		
+		while not stopped.all() and (it < max_it):
+            it += 1
+        	Y_pred = self.model._test_fwd_decode_step(encoding, src_mask, Y_pred_v)
+            output = torch.concat([output, Y_pred], dim=1)     
+
+        	# logits to tokens conversion 
+        	pred_idx = Y_pred.argmax(-1) 
+            Y_sample = F.one_hot(pred_idx, num_classes=len(self.generator.y_vocab)).type(torch.FloatTensor).to(X.device)
+
+            # equivalent to no-dfa
+            pred_idx = Y_pred.argmax(-1) 
+            Y_pred_v = torch.concat([Y_pred_v, Y_sample], dim=1)
+            stopped = torch.logical_or((pred_idx.squeeze() == EOS_idx), stopped)
+        return output[:, 1:, :]
 
 	def model_output_to_next_input(self, X, output_tensor, running):
 		lte = self.model.generator

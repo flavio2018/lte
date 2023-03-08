@@ -1,4 +1,4 @@
-{
+output_dfa = {
 	('-'): {	# negative first number
 		('123456789'): {	
 			('0123456789'): {	# two digits

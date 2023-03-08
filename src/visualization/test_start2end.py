@@ -144,7 +144,7 @@ def test_format_dfa(output: str):
 			if c in branch:
 				valid = True
 				cur_dfa = cur_dfa[branch]
-				if c cur_dfa == '.':
+				if cur_dfa == '.':
 					return valid
 			if not valid:
 				return valid

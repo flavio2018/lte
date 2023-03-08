@@ -183,7 +183,7 @@ class ModelWrapper:
 
 		if (~outputs_are_well_formed & running).sum() > 0:
 			notwell_formed_running_inputs = chararray_inputs[~outputs_are_well_formed & running]
-			num_log_idx = 20 if notwell_formed_running_inputs.shape[0] > 20 else notwell_formed_running_inputs.shape[0]
+			num_log_idx = 10 if notwell_formed_running_inputs.shape[0] > 10 else notwell_formed_running_inputs.shape[0]
 			log_idx = np.random.choice(notwell_formed_running_inputs.shape[0], size=num_log_idx, replace=False)
 			top2_logits, top2_idx = output_tensor[torch.tensor(~outputs_are_well_formed & running, device=output_tensor.device)][torch.tensor(log_idx[:10])].topk(k=2, dim=-1)
 			
@@ -203,7 +203,7 @@ class ModelWrapper:
 		
 		if (~inputs_do_contain_substrings & running).sum() > 0:
 			inputs_without_substring_running = chararray_inputs[~inputs_do_contain_substrings & running]
-			num_log_idx = 20 if inputs_without_substring_running.shape[0] > 20 else inputs_without_substring_running.shape[0]
+			num_log_idx = 10 if inputs_without_substring_running.shape[0] > 10 else inputs_without_substring_running.shape[0]
 			log_idx = np.random.choice(inputs_without_substring_running.shape[0], size=num_log_idx, replace=False)
 			top2_logits, top2_idx = output_tensor[torch.tensor(~inputs_do_contain_substrings & running, device=output_tensor.device)][torch.tensor(log_idx[:10])].topk(k=2, dim=-1)
 			

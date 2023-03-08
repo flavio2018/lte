@@ -149,7 +149,7 @@ class ModelWrapper:
 		original_batch = X
 		
 		for cur_nes in range(max_nes):
-			logging.info(f"~~~ cur_nes {cur_nes} ~~~")
+			logging.info(f"\n~~~ cur_nes {cur_nes} ~~~")
 			# Y = Y if (cur_nes == (max_nes - 1)) else None
 			output = self.model(X, Y=None, tf=tf)
 			next_inputs, running = self.model_output_to_next_input(X, output, running)
@@ -170,16 +170,16 @@ class ModelWrapper:
 		running &= outputs_have_stopped
 		chararray_outputs = cut_at_first_dot(chararray_outputs, running)
 		
-		logging.info(f"{(~outputs_have_stopped).sum()} outputs have not stopped.")
+		logging.info(f"\n{(~outputs_have_stopped).sum()} outputs have not stopped.")
 		logging.info(f"{running.sum()} outputs are running.")
 		
 		if self.use_tricks:
 			chararray_outputs = replace_double_spaces(chararray_outputs)
 			outputs_are_well_formed = contain_one_space(chararray_outputs)
-			logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed after double space correction.")
+			logging.info(f"\n{(~outputs_are_well_formed & running).sum()} outputs are not well formed after double space correction.")
 		else:
 			outputs_are_well_formed = contain_one_space(chararray_outputs)
-			logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed.")
+			logging.info(f"\n{(~outputs_are_well_formed & running).sum()} outputs are not well formed.")
 
 		if (~outputs_are_well_formed & running).sum() > 0:
 			notwell_formed_running_inputs = chararray_inputs[~outputs_are_well_formed & running]
@@ -189,9 +189,9 @@ class ModelWrapper:
 			
 			logging.info('\n'.join([f"{i} → {o}"
 				for i, o in zip(notwell_formed_running_inputs[log_idx], chararray_outputs[~outputs_are_well_formed & running][log_idx])]))
-			logging.info("Top 2 logits for first 10 ill-formed model outputs")
+			logging.info("\nTop 2 logits for first 10 ill-formed model outputs")
 			logging.info(top2_logits.cpu().numpy().round(decimals=2))
-			logging.info("Top 2 predictions")
+			logging.info("\nTop 2 predictions")
 			logging.info(itos_f(top2_idx.cpu().numpy()))
 
 		running &= outputs_are_well_formed
@@ -199,7 +199,7 @@ class ModelWrapper:
 		
 		# check substring in input
 		inputs_do_contain_substrings = inputs_contain_substrings(chararray_inputs, chararray_outputs, running)
-		logging.info(f"{(~inputs_do_contain_substrings & running).sum()} outputs have wrong substrings.")
+		logging.info(f"\n{(~inputs_do_contain_substrings & running).sum()} outputs have wrong substrings.")
 		
 		if (~inputs_do_contain_substrings & running).sum() > 0:
 			inputs_without_substring_running = chararray_inputs[~inputs_do_contain_substrings & running]
@@ -209,20 +209,20 @@ class ModelWrapper:
 			
 			logging.info('\n'.join([f"{i} → {o}"
 				for i, o in zip(inputs_without_substring_running[log_idx], chararray_outputs[~inputs_do_contain_substrings & running][log_idx])]))
-			logging.info("Top 2 logits for first 10 no-substring model outputs")
+			logging.info("\nTop 2 logits for first 10 no-substring model outputs")
 			logging.info(top2_logits.cpu().numpy().round(decimals=2))
 			logging.info(itos_f(top2_idx.cpu().numpy()))
 		
 		if self.use_tricks:
 			inputs_do_soft_contain_substrings = inputs_soft_contain_substrings(chararray_inputs, chararray_outputs, running)
-			logging.info(f"{(~inputs_do_soft_contain_substrings & running).sum()} outputs have non-softmatching substrings.")
+			logging.info(f"\n{(~inputs_do_soft_contain_substrings & running).sum()} outputs have non-softmatching substrings.")
 			running &= inputs_do_soft_contain_substrings
 			next_input = soft_replace_substrings_in_inputs(chararray_inputs, chararray_outputs, running)
 		else:
 			running &= inputs_do_contain_substrings
 			next_input = replace_substrings_in_inputs(chararray_inputs, chararray_outputs, running)
 
-		logging.info(f"{running.sum()} outputs are running.")
+		logging.info(f"\n{running.sum()} outputs are running.")
 		
 		return next_input, running
 

@@ -189,7 +189,8 @@ class ModelWrapper:
 		logging.info("Top 2 logits for first 10 ill-formed model outputs")
 		logging.info(top2_logits)
 		logging.info("Top 2 predictions")
-		logging.info(top2_idx.cpu().apply_(lte.y_vocab.lookup_token))
+		logging.info(top2_idx)
+		# logging.info(top2_idx.cpu().apply_(lte.y_vocab.lookup_token))
 		running &= outputs_are_well_formed
 		logging.info(f"{running.sum()} outputs are running.")
 		

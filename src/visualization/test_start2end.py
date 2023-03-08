@@ -181,17 +181,19 @@ class ModelWrapper:
 			outputs_are_well_formed = contain_one_space(chararray_outputs)
 			logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed.")
 
-		notwell_formed_running_inputs = chararray_inputs[~outputs_are_well_formed & running]
-		num_log_idx = 20 if notwell_formed_running_inputs.shape[0] > 20 else notwell_formed_running_inputs.shape[0]
-		log_idx = np.random.choice(notwell_formed_running_inputs.shape[0], size=num_log_idx, replace=False)
-		top2_logits, top2_idx = output_tensor[torch.tensor(~outputs_are_well_formed & running, device=output_tensor.device)][torch.tensor(log_idx[:10])].topk(k=2, dim=-1)
-		
-		logging.info('\n'.join([f"{i} → {o}"
-			for i, o in zip(notwell_formed_running_inputs[log_idx], chararray_outputs[~outputs_are_well_formed & running][log_idx])]))
-		logging.info("Top 2 logits for first 10 ill-formed model outputs")
-		logging.info(top2_logits.cpu().numpy().round(decimals=2))
-		logging.info("Top 2 predictions")
-		logging.info(itos_f(top2_idx.cpu().numpy()))
+		if (~outputs_are_well_formed & running).sum() > 0:
+			notwell_formed_running_inputs = chararray_inputs[~outputs_are_well_formed & running]
+			num_log_idx = 20 if notwell_formed_running_inputs.shape[0] > 20 else notwell_formed_running_inputs.shape[0]
+			log_idx = np.random.choice(notwell_formed_running_inputs.shape[0], size=num_log_idx, replace=False)
+			top2_logits, top2_idx = output_tensor[torch.tensor(~outputs_are_well_formed & running, device=output_tensor.device)][torch.tensor(log_idx[:10])].topk(k=2, dim=-1)
+			
+			logging.info('\n'.join([f"{i} → {o}"
+				for i, o in zip(notwell_formed_running_inputs[log_idx], chararray_outputs[~outputs_are_well_formed & running][log_idx])]))
+			logging.info("Top 2 logits for first 10 ill-formed model outputs")
+			logging.info(top2_logits.cpu().numpy().round(decimals=2))
+			logging.info("Top 2 predictions")
+			logging.info(itos_f(top2_idx.cpu().numpy()))
+
 		running &= outputs_are_well_formed
 		logging.info(f"{running.sum()} outputs are running.")
 		
@@ -199,16 +201,17 @@ class ModelWrapper:
 		inputs_do_contain_substrings = inputs_contain_substrings(chararray_inputs, chararray_outputs, running)
 		logging.info(f"{(~inputs_do_contain_substrings & running).sum()} outputs have wrong substrings.")
 		
-		inputs_without_substring_running = chararray_inputs[~inputs_do_contain_substrings & running]
-		num_log_idx = 20 if inputs_without_substring_running.shape[0] > 20 else inputs_without_substring_running.shape[0]
-		log_idx = np.random.choice(inputs_without_substring_running.shape[0], size=num_log_idx, replace=False)
-		top2_logits, top2_idx = output_tensor[torch.tensor(~inputs_do_contain_substrings & running, device=output_tensor.device)][torch.tensor(log_idx[:10])].topk(k=2, dim=-1)
-		
-		logging.info('\n'.join([f"{i} → {o}"
-			for i, o in zip(inputs_without_substring_running[log_idx], chararray_outputs[~inputs_do_contain_substrings & running][log_idx])]))
-		logging.info("Top 2 logits for first 10 no-substring model outputs")
-		logging.info(top2_logits.cpu().numpy().round(decimals=2))
-		logging.info(itos_f(top2_idx.cpu().numpy()))
+		if (~inputs_do_contain_substrings & running).sum() > 0:
+			inputs_without_substring_running = chararray_inputs[~inputs_do_contain_substrings & running]
+			num_log_idx = 20 if inputs_without_substring_running.shape[0] > 20 else inputs_without_substring_running.shape[0]
+			log_idx = np.random.choice(inputs_without_substring_running.shape[0], size=num_log_idx, replace=False)
+			top2_logits, top2_idx = output_tensor[torch.tensor(~inputs_do_contain_substrings & running, device=output_tensor.device)][torch.tensor(log_idx[:10])].topk(k=2, dim=-1)
+			
+			logging.info('\n'.join([f"{i} → {o}"
+				for i, o in zip(inputs_without_substring_running[log_idx], chararray_outputs[~inputs_do_contain_substrings & running][log_idx])]))
+			logging.info("Top 2 logits for first 10 no-substring model outputs")
+			logging.info(top2_logits.cpu().numpy().round(decimals=2))
+			logging.info(itos_f(top2_idx.cpu().numpy()))
 		
 		if self.use_tricks:
 			inputs_do_soft_contain_substrings = inputs_soft_contain_substrings(chararray_inputs, chararray_outputs, running)

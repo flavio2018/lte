@@ -135,6 +135,20 @@ def soft_replace_substrings_in_inputs(inputs, outputs, running):
 			next_inputs.append('()')
 	return next_inputs
 
+def test_format_dfa(output: str):
+	cur_dfa = output_dfa
+
+	for c in output:
+		valid = False
+		for branch in cur_dfa:
+			if c in branch:
+				valid = True
+				cur_dfa = cur_dfa[branch]
+				if c cur_dfa == '.':
+					return valid
+			if not valid:
+				return valid
+
 class ModelWrapper:
 	
 	def __init__(self, model):
@@ -178,10 +192,19 @@ class ModelWrapper:
 			# logits to tokens conversion 
 			pred_idx = Y_pred.argmax(-1) 
 			Y_sample = F.one_hot(pred_idx, num_classes=len(self.generator.y_vocab)).type(torch.FloatTensor).to(X.device)
-
-			# equivalent to no-dfa
-			pred_idx = Y_pred.argmax(-1) 
+			top2_logits, top2_idx = Y_pred.topk(k=2, dim=-1)
+			pred_conf = top2_logits[:, 0] - top2_logits[:, 1]
+			
 			Y_pred_v = torch.concat([Y_pred_v, Y_sample], dim=1)
+			valid_dfa = []
+			for output in lte.y_to_str(output[:, 1:, :]):
+				valid_dfa.append(test_format_dfa(output))
+
+			for valid_idx, valid in enumerate(valid_dfa):
+				if not valid:
+					pred_idx = top2_idx[valid_idx][1]
+					Y_sample = F.one_hot(pred_idx, num_classes=len(self.generator.y_vocab)).type(torch.FloatTensor).to(X.device)			
+
 			stopped = torch.logical_or((pred_idx.squeeze() == EOS_idx), stopped)
 		return output[:, 1:, :]
 

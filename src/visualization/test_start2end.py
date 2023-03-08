@@ -134,65 +134,6 @@ def soft_replace_substrings_in_inputs(inputs, outputs, running):
 			next_inputs.append('()')
 	return next_inputs
 
-def model_output_to_next_input(cur_input, output, output_tensor, running, use_tricks):
-	chararray_outputs = np.array(output)
-	chararray_inputs = np.array([x.replace('#', '') for x in cur_input])
-
-	# check output structure
-	outputs_have_stopped = have_stopped(chararray_outputs)
-	running &= outputs_have_stopped
-	chararray_outputs = cut_at_first_dot(chararray_outputs, running)
-	
-	logging.info(f"{(~outputs_have_stopped).sum()} outputs have not stopped.")
-	logging.info(f"{running.sum()} outputs are running.")
-	
-	if use_tricks:
-		chararray_outputs = replace_double_spaces(chararray_outputs)
-		outputs_are_well_formed = contain_one_space(chararray_outputs)
-		logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed after double space correction.")
-	else:
-		outputs_are_well_formed = contain_one_space(chararray_outputs)
-		logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed.")
-
-	notwell_formed_running_inputs = chararray_inputs[~outputs_are_well_formed & running]
-	num_log_idx = 20 if notwell_formed_running_inputs.shape[0] > 20 else notwell_formed_running_inputs.shape[0]
-	log_idx = np.random.choice(notwell_formed_running_inputs.shape[0], size=num_log_idx, replace=False)
-	top2_logits, _ = output_tensor[torch.tensor(~outputs_are_well_formed & running, device=output_tensor.device)][torch.tensor(log_idx[:10])].topk(k=2, dim=-1)
-	
-	logging.info('\n'.join([f"{i} → {o}"
-		for i, o in zip(notwell_formed_running_inputs[log_idx], chararray_outputs[~outputs_are_well_formed & running][log_idx])]))
-	logging.info("Top 2 logits for first 10 ill-formed model outputs")
-	logging.info(top2_logits)
-	running &= outputs_are_well_formed
-	logging.info(f"{running.sum()} outputs are running.")
-	
-	# check substring in input
-	inputs_do_contain_substrings = inputs_contain_substrings(chararray_inputs, chararray_outputs, running)
-	logging.info(f"{(~inputs_do_contain_substrings & running).sum()} outputs have wrong substrings.")
-	
-	inputs_without_substring_running = chararray_inputs[~inputs_do_contain_substrings & running]
-	num_log_idx = 20 if inputs_without_substring_running.shape[0] > 20 else inputs_without_substring_running.shape[0]
-	log_idx = np.random.choice(inputs_without_substring_running.shape[0], size=num_log_idx, replace=False)
-	top2_logits, _ = output_tensor[torch.tensor(~inputs_do_contain_substrings & running, device=output_tensor.device)][torch.tensor(log_idx[:10])].topk(k=2, dim=-1)
-	
-	logging.info('\n'.join([f"{i} → {o}"
-		for i, o in zip(inputs_without_substring_running[log_idx], chararray_outputs[~inputs_do_contain_substrings & running][log_idx])]))
-	logging.info("Top 2 logits for first 10 no-substring model outputs")
-	logging.info(top2_logits)
-	
-	if use_tricks:
-		inputs_do_soft_contain_substrings = inputs_soft_contain_substrings(chararray_inputs, chararray_outputs, running)
-		logging.info(f"{(~inputs_do_soft_contain_substrings & running).sum()} outputs have non-softmatching substrings.")
-		running &= inputs_do_soft_contain_substrings
-		next_input = soft_replace_substrings_in_inputs(chararray_inputs, chararray_outputs, running)
-	else:
-		running &= inputs_do_contain_substrings
-		next_input = replace_substrings_in_inputs(chararray_inputs, chararray_outputs, running)
-
-	logging.info(f"{running.sum()} outputs are running.")
-	
-	return next_input, running
-
 class ModelWrapper:
 	
 	def __init__(self, model):
@@ -211,14 +152,73 @@ class ModelWrapper:
 			logging.info(f"~~~ cur_nes {cur_nes} ~~~")
 			# Y = Y if (cur_nes == (max_nes - 1)) else None
 			output = self.model(X, Y=None, tf=tf)
-			next_inputs, running = model_output_to_next_input(lte.x_to_str(X),
-															  lte.y_to_str(output),
-															  output,
-															  running,
-															  self.use_tricks)
+			next_inputs, running = self.model_output_to_next_input(X, output, running)
 			X = lte._build_batch([list(i) for i in next_inputs])
 			self.running.append(running)
 		return lte._build_batch([list(i) + ['.'] for i in next_inputs], y=True)
+
+	def model_output_to_next_input(self, X, output_tensor, running):
+		lte = self.model.generator
+		cur_input, output = lte.x_to_str(X), lte.y_to_str(output_tensor)
+		chararray_outputs = np.array(output)
+		chararray_inputs = np.array([x.replace('#', '') for x in cur_input])
+
+		# check output structure
+		outputs_have_stopped = have_stopped(chararray_outputs)
+		running &= outputs_have_stopped
+		chararray_outputs = cut_at_first_dot(chararray_outputs, running)
+		
+		logging.info(f"{(~outputs_have_stopped).sum()} outputs have not stopped.")
+		logging.info(f"{running.sum()} outputs are running.")
+		
+		if self.use_tricks:
+			chararray_outputs = replace_double_spaces(chararray_outputs)
+			outputs_are_well_formed = contain_one_space(chararray_outputs)
+			logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed after double space correction.")
+		else:
+			outputs_are_well_formed = contain_one_space(chararray_outputs)
+			logging.info(f"{(~outputs_are_well_formed & running).sum()} outputs are not well formed.")
+
+		notwell_formed_running_inputs = chararray_inputs[~outputs_are_well_formed & running]
+		num_log_idx = 20 if notwell_formed_running_inputs.shape[0] > 20 else notwell_formed_running_inputs.shape[0]
+		log_idx = np.random.choice(notwell_formed_running_inputs.shape[0], size=num_log_idx, replace=False)
+		top2_logits, top2_idx = output_tensor[torch.tensor(~outputs_are_well_formed & running, device=output_tensor.device)][torch.tensor(log_idx[:10])].topk(k=2, dim=-1)
+		
+		logging.info('\n'.join([f"{i} → {o}"
+			for i, o in zip(notwell_formed_running_inputs[log_idx], chararray_outputs[~outputs_are_well_formed & running][log_idx])]))
+		logging.info("Top 2 logits for first 10 ill-formed model outputs")
+		logging.info(top2_logits)
+		logging.info("Top 2 predictions")
+		logging.info(top2_idx.cpu().apply_(lte.y_vocab.lookup_token))
+		running &= outputs_are_well_formed
+		logging.info(f"{running.sum()} outputs are running.")
+		
+		# check substring in input
+		inputs_do_contain_substrings = inputs_contain_substrings(chararray_inputs, chararray_outputs, running)
+		logging.info(f"{(~inputs_do_contain_substrings & running).sum()} outputs have wrong substrings.")
+		
+		inputs_without_substring_running = chararray_inputs[~inputs_do_contain_substrings & running]
+		num_log_idx = 20 if inputs_without_substring_running.shape[0] > 20 else inputs_without_substring_running.shape[0]
+		log_idx = np.random.choice(inputs_without_substring_running.shape[0], size=num_log_idx, replace=False)
+		top2_logits, top2_idx = output_tensor[torch.tensor(~inputs_do_contain_substrings & running, device=output_tensor.device)][torch.tensor(log_idx[:10])].topk(k=2, dim=-1)
+		
+		logging.info('\n'.join([f"{i} → {o}"
+			for i, o in zip(inputs_without_substring_running[log_idx], chararray_outputs[~inputs_do_contain_substrings & running][log_idx])]))
+		logging.info("Top 2 logits for first 10 no-substring model outputs")
+		logging.info(top2_logits)
+		
+		if self.use_tricks:
+			inputs_do_soft_contain_substrings = inputs_soft_contain_substrings(chararray_inputs, chararray_outputs, running)
+			logging.info(f"{(~inputs_do_soft_contain_substrings & running).sum()} outputs have non-softmatching substrings.")
+			running &= inputs_do_soft_contain_substrings
+			next_input = soft_replace_substrings_in_inputs(chararray_inputs, chararray_outputs, running)
+		else:
+			running &= inputs_do_contain_substrings
+			next_input = replace_substrings_in_inputs(chararray_inputs, chararray_outputs, running)
+
+		logging.info(f"{running.sum()} outputs are running.")
+		
+		return next_input, running
 
 def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=None, plot_ax=None, plot_label=None):
 	accuracy_values = []

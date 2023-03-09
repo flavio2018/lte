@@ -30,8 +30,7 @@ def main(cfg):
 			level=logging.INFO)
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
-	wrapped_model = ModelWrapper(model)
-	wrapped_model.use_tricks = cfg.tricks
+	wrapped_model = ModelWrapper(model, cfg)
 	tricks = '_tricks' if cfg.tricks else ''
 
 	ax, df = test_ood_start2end(wrapped_model, lte, 10, generator_kwargs={'batch_size': cfg.bs,
@@ -151,11 +150,11 @@ def test_format_dfa(output: str):
 
 class ModelWrapper:
 	
-	def __init__(self, model):
+	def __init__(self, model, cfg):
 		self.model = model
 		self.running = []
-		self.use_tricks = False
-		self.use_dfa = False
+		self.use_tricks = cfg.tricks
+		self.use_dfa = cfg.use_dfa
 
 	def __call__(self, X, Y=None, tf=False, max_nes=0):
 		self.model.eval()

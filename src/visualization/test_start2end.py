@@ -176,7 +176,7 @@ class ModelWrapper:
 			if self.use_dfa:
 				output = self.fwd_dfa(X, tf=tf)
 			if self.multi:
-				next_inputs, running = self.multi_fwd(X, n_samples=cfg.n_samples, tf=tf)
+				next_inputs, running = self.multi_fwd(X, n_samples=self.n_samples, tf=tf)
 			else:
 				output = self.model(X, Y=None, tf=tf)
 			if not self.multi:

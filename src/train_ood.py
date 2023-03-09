@@ -24,6 +24,7 @@ def train_ood(cfg):
             "simplify": cfg.simplify,
             "simplify_w_value": cfg.simplify_w_value,
             "filtered_swv": cfg.filtered_swv,
+            "filtered_s2e": cfg.filtered_s2e,
             "substitute": cfg.substitute,
             "split": "train",
         }

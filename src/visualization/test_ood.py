@@ -68,6 +68,7 @@ def load_model(cfg, lte):
 			num_layers=cfg.num_layers,
 			generator=lte,
 			label_pe=cfg.label_pe,
+			deterministic=cfg.deterministic,
 		).to(cfg.device)
 	model.load_state_dict(
 		torch.load(

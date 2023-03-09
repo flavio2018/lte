@@ -24,6 +24,7 @@ num_heads: 4
 num_layers: 1
 label_pe: false
 regr_ut: false
+deterministic: true
 
 # data
 step_generator: false

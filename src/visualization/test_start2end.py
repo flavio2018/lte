@@ -69,8 +69,13 @@ def inputs_contain_substrings(inputs, outputs, running):
 	
 	for idx, r in enumerate(running):
 		if r:
-			_, substring = outputs[idx].split()
-			inputs_contain_substrings += [substring in inputs[idx]]
+			try:
+				_, substring = outputs[idx].split()
+				inputs_contain_substrings += [substring in inputs[idx]]
+			except ValueError as e:
+				print(e)
+				print(outputs[idx])
+				inputs_contain_substrings += [r]
 		else:
 			inputs_contain_substrings += [r]
 

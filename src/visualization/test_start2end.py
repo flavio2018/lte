@@ -177,7 +177,7 @@ class ModelWrapper:
 			self.running.append(running)
 		return lte._build_batch([list(i) + ['.'] for i in next_inputs], y=True)
 
-	def multi_fwd(self, X, n_samples, tf=tf):
+	def multi_fwd(self, X, n_samples, tf=False):
 		def get_valid_substrings(outputs):
 			substrings = set()
 			for o in outputs:

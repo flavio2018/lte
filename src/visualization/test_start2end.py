@@ -156,6 +156,7 @@ class ModelWrapper:
 		self.running = []
 		self.use_tricks = cfg.tricks
 		self.use_dfa = cfg.use_dfa
+		self.multi = cfg.multi
 
 	def __call__(self, X, Y=None, tf=False, max_nes=0):
 		self.model.eval()

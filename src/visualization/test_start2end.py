@@ -201,7 +201,7 @@ class ModelWrapper:
 				valid_dfa.append(test_format_dfa(output_str))
 
 			for valid_idx, valid in enumerate(valid_dfa):
-				if not valid and pred_conf < 1:
+				if not valid and pred_conf[valid_idx] < 1:
 					pred_idx = top2_idx[valid_idx, :, 1]
 					Y_sample = F.one_hot(pred_idx, num_classes=len(lte.y_vocab)).type(torch.FloatTensor).to(X.device)			
 

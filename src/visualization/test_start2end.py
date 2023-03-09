@@ -170,7 +170,7 @@ class ModelWrapper:
 			if self.use_dfa:
 				output = self.fwd_dfa(X, tf=tf)
 			if self.multi:
-				output = self.multi_fwd(X, n_samples=100, tf=tf)
+				output = self.multi_fwd(X, n_samples=500, tf=tf)
 			else:
 				output = self.model(X, Y=None, tf=tf)
 			next_inputs, running = self.model_output_to_next_input(X, output, running)

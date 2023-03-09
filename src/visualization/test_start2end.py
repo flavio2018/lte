@@ -198,8 +198,8 @@ class ModelWrapper:
 			
 			Y_pred_v = torch.concat([Y_pred_v, Y_sample], dim=1)
 			valid_dfa = []
-			for output in lte.y_to_str(output[:, 1:, :]):
-				valid_dfa.append(test_format_dfa(output))
+			for output_str in lte.y_to_str(output[:, 1:, :]):
+				valid_dfa.append(test_format_dfa(output_str))
 
 			for valid_idx, valid in enumerate(valid_dfa):
 				if not valid:

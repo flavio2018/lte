@@ -192,7 +192,7 @@ class ModelWrapper:
 
 			# logits to tokens conversion 
 			pred_idx = Y_pred.argmax(-1) 
-			Y_sample = F.one_hot(pred_idx, num_classes=len(lte.y_vocab)).type(torch.FloatTensor).to(X.device)
+			Y_sample = F.one_hot(pred_idx, num_classes=len(lte.y_vocab)).type(torch.FloatTensor).to(X.device).unsqueeze(dim=1)
 			top2_logits, top2_idx = Y_pred.topk(k=2, dim=-1)
 			pred_conf = top2_logits[:, :, 0] - top2_logits[:, :, 1]
 			
@@ -203,7 +203,7 @@ class ModelWrapper:
 			for valid_idx, valid in enumerate(valid_dfa):
 				if not valid and pred_conf[valid_idx] < 1:
 					pred_idx = top2_idx[valid_idx, :, 1]
-					Y_sample = F.one_hot(pred_idx, num_classes=len(lte.y_vocab)).type(torch.FloatTensor).to(X.device)			
+					Y_sample = F.one_hot(pred_idx, num_classes=len(lte.y_vocab)).type(torch.FloatTensor).to(X.device).unsqueeze(dim=1)			
 
 			Y_pred_v = torch.concat([Y_pred_v, Y_sample], dim=1)
 			stopped = torch.logical_or((pred_idx.squeeze() == EOS_idx), stopped)

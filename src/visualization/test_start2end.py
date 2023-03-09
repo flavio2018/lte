@@ -183,8 +183,9 @@ class ModelWrapper:
 			substrings = set()
 			for o, v in zip(outputs, valid):
 				if v:
+					logging.info(o)
 					result, substring = o.split()
-					substrings |= set(substring)
+					substrings |= set([substring])
 			return substrings
 
 		multi_output = []

@@ -75,7 +75,7 @@ def inputs_contain_substrings(inputs, outputs, running):
 			except ValueError as e:
 				print(e)
 				print(outputs[idx])
-				inputs_contain_substrings += [r]
+				inputs_contain_substrings += [False]
 		else:
 			inputs_contain_substrings += [r]
 

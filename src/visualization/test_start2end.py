@@ -183,12 +183,12 @@ class ModelWrapper:
 			substrings = set()
 			for o, v in zip(outputs, valid):
 				if v:
-					logging.info(o)
 					result, substring = o.split()
 					substrings |= set([substring])
 			return substrings
 
 		multi_output = []
+		chararray_inputs = np.array([x.replace('#', '') for x in lte.x_to_str(X)])
 		lte = self.model.generator
 
 		for sample_idx in range(n_samples):
@@ -202,6 +202,8 @@ class ModelWrapper:
 		multi_output = np.array([cut_at_first_dot(o, v) for o, v in zip(multi_output, valid)])
 		multi_output_have_1_space = np.array([contain_one_space(o) for o in multi_output])
 		valid &= multi_output_have_1_space
+		input_contain_multi_substring = np.array([inputs_contain_substrings(chararray_inputs, o, v) for o, v in zip(multi_output, valid)])
+		valid &= input_contain_multi_substring
 		multi_substrings = [get_valid_substrings(o, v) for o, v in zip(multi_output, valid)]
 		logging.info(multi_substrings)
 

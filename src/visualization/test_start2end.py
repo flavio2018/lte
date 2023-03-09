@@ -178,6 +178,7 @@ class ModelWrapper:
 	def fwd_dfa(self, X, tf=False):
 		it, max_it = 0, 100
 		lte = self.model.generator
+        EOS_idx = lte.y_vocab['.']
 		
 		encoding, src_mask = self.model._test_fwd_encode_step(X)
 		stopped = torch.zeros(X.size(0)).type(torch.BoolTensor).to(X.device)

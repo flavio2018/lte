@@ -192,7 +192,7 @@ class ModelWrapper:
 
 			# logits to tokens conversion 
 			pred_idx = Y_pred.argmax(-1) 
-			Y_sample = F.one_hot(pred_idx, num_classes=len(lte.y_vocab)).type(torch.FloatTensor).to(X.device).unsqueeze(dim=1)
+			Y_sample = F.one_hot(pred_idx, num_classes=len(lte.y_vocab)).type(torch.FloatTensor).to(X.device)
 			top2_logits, top2_idx = Y_pred.topk(k=2, dim=-1)
 			pred_conf = top2_logits[:, :, 0] - top2_logits[:, :, 1]
 			

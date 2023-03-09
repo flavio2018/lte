@@ -162,6 +162,7 @@ class ModelWrapper:
 		self.use_tricks = cfg.tricks
 		self.use_dfa = cfg.use_dfa
 		self.multi = cfg.multi
+		self.n_samples = cfg.n_samples
 
 	def __call__(self, X, Y=None, tf=False, max_nes=0):
 		self.model.eval()
@@ -175,7 +176,7 @@ class ModelWrapper:
 			if self.use_dfa:
 				output = self.fwd_dfa(X, tf=tf)
 			if self.multi:
-				next_inputs, running = self.multi_fwd(X, n_samples=500, tf=tf)
+				next_inputs, running = self.multi_fwd(X, n_samples=cfg.n_samples, tf=tf)
 			else:
 				output = self.model(X, Y=None, tf=tf)
 			if not self.multi:

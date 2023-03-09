@@ -179,11 +179,12 @@ class ModelWrapper:
 		return lte._build_batch([list(i) + ['.'] for i in next_inputs], y=True)
 
 	def multi_fwd(self, X, n_samples, tf=False):
-		def get_valid_substrings(outputs):
+		def get_valid_substrings(outputs, valid):
 			substrings = set()
-			for o in outputs:
-				result, substring = o.split()
-				substrings |= set(substring)
+			for o, v in zip(outputs, valid):
+				if v:
+					result, substring = o.split()
+					substrings |= set(substring)
 			return substrings
 
 		multi_output = []
@@ -200,7 +201,7 @@ class ModelWrapper:
 		multi_output = np.array([cut_at_first_dot(o, v) for o, v in zip(multi_output, valid)])
 		multi_output_have_1_space = np.array([contain_one_space(o) for o in multi_output])
 		valid &= multi_output_have_1_space
-		multi_substrings = [get_valid_substrings(o) for o in multi_output]
+		multi_substrings = [get_valid_substrings(o, v) for o, v in zip(multi_output, valid)]
 		logging.info(multi_substrings)
 
 

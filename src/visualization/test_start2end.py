@@ -188,8 +188,8 @@ class ModelWrapper:
 			return substrings
 
 		multi_output = []
-		chararray_inputs = np.array([x.replace('#', '') for x in lte.x_to_str(X)])
 		lte = self.model.generator
+		chararray_inputs = np.array([x.replace('#', '') for x in lte.x_to_str(X)])
 
 		for sample_idx in range(n_samples):
 			output = self.model(X, Y=None, tf=tf)

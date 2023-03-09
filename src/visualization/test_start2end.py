@@ -175,32 +175,34 @@ class ModelWrapper:
 			if self.use_dfa:
 				output = self.fwd_dfa(X, tf=tf)
 			if self.multi:
-				output = self.multi_fwd(X, n_samples=500, tf=tf)
+				next_inputs, running = self.multi_fwd(X, n_samples=500, tf=tf)
 			else:
 				output = self.model(X, Y=None, tf=tf)
-			next_inputs, running = self.model_output_to_next_input(X, output, running)
+			if not self.multi:
+				next_inputs, running = self.model_output_to_next_input(X, output, running)
 			X = lte._build_batch([list(i) for i in next_inputs])
 			self.running.append(running)
 		return lte._build_batch([list(i) + ['.'] for i in next_inputs], y=True)
 
 	def multi_fwd(self, X, n_samples, tf=False):
-		def get_valid_substrings(outputs, valid):
-			substrings = set()
+		def get_valid_outputs_freq(outputs, valid):
+			outputs_freq = dict()
 			for o, v in zip(outputs, valid):
 				if v:
-					result, substring = o.split()
-					substrings |= set([substring])
-			return substrings
+					# result, substring = o.split()
+					outputs_freq.setdefault(o, 0)
+					outputs_freq[o] += 1
+			return outputs_freq
 
-		multi_output = []
+		multi_output_tensors = []
 		lte = self.model.generator
 		chararray_inputs = np.array([x.replace('#', '') for x in lte.x_to_str(X)])
 
 		for sample_idx in range(n_samples):
 			output = self.model(X, Y=None, tf=tf)
-			multi_output.append(output)
+			multi_output_tensors.append(output)
 
-		multi_output = np.array([lte.y_to_str(o) for o in multi_output]).T  # outputs on rows correspond to the same input
+		multi_output = np.array([lte.y_to_str(o) for o in multi_output_tensors]).T  # outputs on the same row correspond to the same input
 		valid = np.full(multi_output.shape, fill_value=True)
 		multi_output_have_stopped = np.array([have_stopped(o) for o in multi_output])
 		valid &= multi_output_have_stopped
@@ -209,9 +211,33 @@ class ModelWrapper:
 		valid &= multi_output_have_1_space
 		input_contain_multi_substring = np.array([inputs_contain_substrings(chararray_inputs, o, v) for o, v in zip(multi_output, valid)])
 		valid &= input_contain_multi_substring
-		multi_substrings = [get_valid_substrings(o, v) for o, v in zip(multi_output, valid)]
-		logging.info(multi_substrings)
+		valid_multi_outputs_freq = [get_valid_outputs_freq(o, v) for o, v in zip(multi_output, valid)]
+		logging.info(valid_multi_outputs_freq)
+		
+		final_output = []
+		running = []
+		for output_idx, output_freq in enumerate(valid_multi_outputs_freq):
+			if len(output_freq) == 0:  # no output was valid
+				final_output.append(multi_output[output_idx, 0])  # take the first sample by default
+				running.append(False)
+			elif len(output_freq) == 1:  # some outputs were valid, all had same result
+				for valid_output, freq in output_freq.items():
+					final_output.append(valid_output)
+				running.append(True)
+			elif len(output_freq) > 1:  # some outputs were valid, they had different results
+				max_freq = -1
+				candidate = None
+				for valid_output, freq in output_freq.items():
+					if freq > max_freq:
+						max_freq = freq
+						candidate = valid_output
+				assert candidate is not None
+				final_output.append(candidate)
+				running.append(True)
 
+		final_output, running = np.array(final_output), np.array(running)
+		next_input = replace_substrings_in_inputs(chararray_inputs, final_output, running)
+		return next_input, running
 
 	def fwd_dfa(self, X, tf=False):
 		it, max_it = 0, 100

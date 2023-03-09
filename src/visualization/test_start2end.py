@@ -168,12 +168,40 @@ class ModelWrapper:
 			# Y = Y if (cur_nes == (max_nes - 1)) else None
 			if self.use_dfa:
 				output = self.fwd_dfa(X, tf=tf)
+			if self.multi:
+				output = self.multi_fwd(X, n_samples=100, tf=tf)
 			else:
 				output = self.model(X, Y=None, tf=tf)
 			next_inputs, running = self.model_output_to_next_input(X, output, running)
 			X = lte._build_batch([list(i) for i in next_inputs])
 			self.running.append(running)
 		return lte._build_batch([list(i) + ['.'] for i in next_inputs], y=True)
+
+	def multi_fwd(self, X, n_samples, tf=tf):
+		def get_valid_substrings(outputs):
+			substrings = set()
+			for o in outputs:
+				result, substring = o.split()
+				substrings |= set(substring)
+			return substrings
+
+		multi_output = []
+		lte = self.model.generator
+
+		for sample_idx in range(n_samples):
+			output = self.model(X, Y=None, tf=tf)
+			multi_output.append(output)
+
+		multi_output = np.array([lte.y_to_str(o) for o in multi_output]).T  # outputs on rows correspond to the same input
+		valid = np.ones_like(multi_output)
+		multi_output_have_stopped = np.array([have_stopped(o) for o in multi_output])
+		valid &= multi_output_have_stopped
+		multi_output = np.array([cut_at_first_dot(o, v) for o, v in zip(multi_output, valid)])
+		multi_output_have_1_space = np.array([contain_one_space(o) for o in multi_output])
+		valid &= multi_output_have_1_space
+		multi_substrings = [get_valid_substrings(o) for o in multi_output]
+		logging.info(multi_substrings)
+
 
 	def fwd_dfa(self, X, tf=False):
 		it, max_it = 0, 100

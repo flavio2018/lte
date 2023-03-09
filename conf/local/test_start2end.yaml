@@ -12,6 +12,7 @@ codename: test_start2end
 device: 'cuda'
 tricks: false
 use_dfa: false
+multi: false
 
 # testing
 bs: 128

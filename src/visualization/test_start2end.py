@@ -178,7 +178,7 @@ class ModelWrapper:
 		it, max_it = 0, 100
 		lte = self.model.generator
 		
-		encoding, src_mask = self.model._test_fwd_encoder_step(X)
+		encoding, src_mask = self.model._test_fwd_encode_step(X)
 		stopped = torch.zeros(X.size(0)).type(torch.BoolTensor).to(X.device)
 		Y_pred_v = torch.tile(F.one_hot(torch.tensor([lte.y_vocab['?']]), num_classes=len(lte.y_vocab)), dims=(X.size(0), 1, 1)).type(torch.FloatTensor).to(X.device)
 		output = Y_pred_v

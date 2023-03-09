@@ -194,7 +194,7 @@ class ModelWrapper:
 			multi_output.append(output)
 
 		multi_output = np.array([lte.y_to_str(o) for o in multi_output]).T  # outputs on rows correspond to the same input
-		valid = np.ones_like(multi_output)
+		valid = np.full(multi_output.shape, fill_value=True)
 		multi_output_have_stopped = np.array([have_stopped(o) for o in multi_output])
 		valid &= multi_output_have_stopped
 		multi_output = np.array([cut_at_first_dot(o, v) for o, v in zip(multi_output, valid)])

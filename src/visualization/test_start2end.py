@@ -217,7 +217,7 @@ class ModelWrapper:
 		multi_output_have_1_space = np.array([contain_one_space(o) for o in multi_output])
 		logging.info(f"{multi_output_have_1_space.sum(axis=1).mean()} multi-outputs have one space on avg")
 		valid &= multi_output_have_1_space
-		input_contain_multi_substring = np.array([inputs_contain_substrings(chararray_inputs, o, v) for o, v in zip(multi_output, valid)])
+		input_contain_multi_substring = np.array([inputs_contain_substrings(np.tile(i, n_samples), o, v) for i, o, v in zip(chararray_inputs, multi_output, valid)])
 		logging.info(f"{input_contain_multi_substring.sum(axis=1).mean()} multi-outputs have strings contained in inputs on avg")
 		logging.info("Examples")
 		logging.info(f"Input: {chararray_inputs[0]}")

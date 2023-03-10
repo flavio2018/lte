@@ -161,6 +161,7 @@ def generate_sample(length, nesting, split='train', ops='asmif', steps=False, sa
             try:
                 program_split = sample2split[program]
             except KeyError:
+                print("KeyError")
                 program_split = 'train' if ((nesting <= 2) and (length <= 2)) else 'test'
 
     solution_steps = get_solution_steps(new_code, intermediate_values)

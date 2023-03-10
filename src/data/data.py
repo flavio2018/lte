@@ -161,8 +161,16 @@ def generate_sample(length, nesting, split='train', ops='asmif', steps=False, sa
             try:
                 program_split = sample2split[program]
             except KeyError:
-                print("KeyError")
-                program_split = 'train' if ((nesting <= 2) and (length <= 2)) else 'test'
+                if ((nesting <= 2) and (length <= 2)):
+                    random_value = torch.rand(1)
+                    if random_value < 0.8:
+                        program_split = 'train'
+                    elif 0.8 < random_value < 0.9:
+                        program_split = 'valid'
+                    else:
+                        program_split = 'test'
+                else:
+                    program_split = 'test'
 
     solution_steps = get_solution_steps(new_code, intermediate_values)
 

@@ -47,6 +47,9 @@ def main(cfg):
 def contain_one_space(outputs):
 	return (np.char.count(outputs, ' ', start=1, end=-1) == 1)
 
+def contain_well_formed_parentheses(outputs):
+	return (np.char.count(outputs, '(') == 1) and (np.char.count(outputs, ')') == 1)
+
 def replace_double_spaces(outputs):
 	return np.char.replace(outputs, '  ', ' ')
 
@@ -199,9 +202,11 @@ class ModelWrapper:
 		lte = self.model.generator
 		chararray_inputs = np.array([x.replace('#', '') for x in lte.x_to_str(X)])
 
+		logging.info("Sampling...")
 		for sample_idx in range(n_samples):
 			output = self.model(X, Y=None, tf=tf)
 			multi_output_tensors.append(output)
+		logging.info("Done.")
 
 		multi_output = np.array([lte.y_to_str(o) for o in multi_output_tensors]).T  # outputs on the same row correspond to the same input
 		valid = np.full(multi_output.shape, fill_value=True)

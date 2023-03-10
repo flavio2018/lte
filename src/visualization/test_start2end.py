@@ -211,14 +211,14 @@ class ModelWrapper:
 		multi_output = np.array([lte.y_to_str(o) for o in multi_output_tensors]).T  # outputs on the same row correspond to the same input
 		valid = np.full(multi_output.shape, fill_value=True)
 		multi_output_have_stopped = np.array([have_stopped(o) for o in multi_output])
-		logging.info(f"{multi_output_have_stopped.sum(dim=1).mean()} multi-outputs have stopped on avg")
+		logging.info(f"{multi_output_have_stopped.sum(axis=1).mean()} multi-outputs have stopped on avg")
 		valid &= multi_output_have_stopped
 		multi_output = np.array([cut_at_first_dot(o, v) for o, v in zip(multi_output, valid)])
 		multi_output_have_1_space = np.array([contain_one_space(o) for o in multi_output])
-		logging.info(f"{multi_output_have_1_space.sum(dim=1).mean()} multi-outputs have one space on avg")
+		logging.info(f"{multi_output_have_1_space.sum(axis=1).mean()} multi-outputs have one space on avg")
 		valid &= multi_output_have_1_space
 		input_contain_multi_substring = np.array([inputs_contain_substrings(chararray_inputs, o, v) for o, v in zip(multi_output, valid)])
-		logging.info(f"{input_contain_multi_substring.sum(dim=1).mean()} multi-outputs have strings contained in inputs on avg")
+		logging.info(f"{input_contain_multi_substring.sum(axis=1).mean()} multi-outputs have strings contained in inputs on avg")
 		valid &= input_contain_multi_substring
 		valid_multi_outputs_freq = [get_valid_outputs_freq(o, v) for o, v in zip(multi_output, valid)]
 		logging.info(valid_multi_outputs_freq)

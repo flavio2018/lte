@@ -136,7 +136,6 @@ class LTEStepsGenerator(LTEGenerator):
         Xs = set()
         
         for _ in range(batch_size):
-            print(split, _)
             if split == 'test':
                 x_in_Xs = True
                 while x_in_Xs:
@@ -166,7 +165,6 @@ class LTEStepsGenerator(LTEGenerator):
                     else:
                         x, y = steps[0], values[0]
                     x_in_Xs = x in Xs
-                    print(x_in_Xs)
                 Xs.add(x)
             else:
                 _, _, steps, values = self._generate_sample(max_length, max_nesting, split, ops)

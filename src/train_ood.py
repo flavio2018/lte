@@ -99,15 +99,15 @@ def train_ood(cfg):
             tf = True if (torch.rand(1) > cfg.tf).item() else False
         else:
             tf = cfg.tf
-        print('before train')
+
         loss_step, acc_step = train_step(model, lte, cfg.max_len, cfg.max_nes, lte_kwargs, opt, xent, tf=tf)
 
         if it % FREQ_WANDB_LOG == 0:
             lte_kwargs['split']='valid'
-            print('before valid')            
+
             loss_valid_step, acc_valid_step = valid_step(model, lte, cfg.max_len, cfg.max_nes, lte_kwargs, xent, tf=cfg.tf)
             lte_kwargs['split']='test'
-            print('before test')            
+                        
             loss_ood_len, acc_ood_len = valid_step(model, lte, cfg.max_len+2, cfg.max_nes, lte_kwargs, xent, tf=cfg.tf)
             loss_ood_nes, acc_ood_nes = valid_step(model, lte, cfg.max_len, cfg.max_nes+2, lte_kwargs, xent, tf=cfg.tf)
 

@@ -175,7 +175,7 @@ def generate_sample(length, nesting, split='train', ops='asmif', steps=False, sa
                 else:
                     program_split = 'test'
             if split == 'test':
-                print(program_split)
+                print(program_split == split)
 
     solution_steps = get_solution_steps(new_code, intermediate_values)
 

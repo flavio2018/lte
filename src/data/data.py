@@ -162,15 +162,16 @@ def generate_sample(length, nesting, split='train', ops='asmif', steps=False, sa
                 program_split = sample2split[program]
             except KeyError:
                 if ((nesting <= 2) and (length <= 2)):
-                    random_value = np.random.rand(1)[0]
-                    if random_value < 0.8:
+                    program_hash = hash(program)
+                    if program_hash % 3 == 0:
                         program_split = 'train'
-                    elif 0.8 < random_value < 0.9:
+                    elif program_hash % 3 == 1:
                         program_split = 'valid'
                     else:
                         program_split = 'test'
                 else:
                     program_split = 'test'
+            print(program_split)
 
     solution_steps = get_solution_steps(new_code, intermediate_values)
 

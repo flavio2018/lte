@@ -136,6 +136,7 @@ class LTEStepsGenerator(LTEGenerator):
         Xs = set()
         
         for _ in range(batch_size):
+            print(split, _)
             if split == 'test':
                 x_in_Xs = True
                 while x_in_Xs:

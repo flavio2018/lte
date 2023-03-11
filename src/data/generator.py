@@ -146,7 +146,7 @@ class LTEStepsGenerator(LTEGenerator):
                     if start_to_end:
                         x, y = steps[0], values[-1]
                     elif filtered_s2e:
-                        while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any():
+                        while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any() and max_length <= 2:
                             _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops)
                             start_end = [self._get_start_end_expr(e) for e in steps[:-1]]
                             subexpressions = [step[s:e] for (s,e), step in zip(start_end, steps[:-1])]
@@ -156,7 +156,6 @@ class LTEStepsGenerator(LTEGenerator):
                     elif simplify_w_value:
                         x, y = steps[0], f"{values[0]} {subexpressions[0]}"
                     elif filtered_swv:
-                        print('here')
                         while torch.tensor([len(three_digits_re.findall(s)) > 0 for s in steps]).any() and max_length <= 2:
                             _, _, steps, values = self._generate_sample_naive(max_length, max_nesting, split, ops)
                             start_end = [self._get_start_end_expr(e) for e in steps[:-1]]

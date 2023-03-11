@@ -159,7 +159,10 @@ def generate_sample(length, nesting, split='train', ops='asmif', steps=False, sa
                 program_split = 'test'
         else:
             try:
-                program_split = sample2split[program]
+                if ((nesting <= 2) and (length <= 2)):
+                    program_split = sample2split[program]
+                else:
+                    program_split = 'test'
             except KeyError:
                 if ((nesting <= 2) and (length <= 2)):
                     program_hash = hash(program)

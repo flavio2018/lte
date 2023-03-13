@@ -393,7 +393,7 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 			acc = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
 			seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)
 			accuracy_values += [acc.item()]
-			seq_acc_avg += [seq_acc_avg.item()]
+			seq_acc_values += [seq_acc_avg.item()]
 		else:
 			accuracy_values += [0]
 			seq_acc_avg += [0]

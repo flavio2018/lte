@@ -43,6 +43,7 @@ def main(cfg):
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/figures/{cfg.ckpt[:-4]}_start2end{tricks}.pdf"))
 	df = df.set_index('Nesting')
+	df = np.round(df, 2)
 	df.T.to_latex(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/tables/{cfg.ckpt[:-4]}_start2end{tricks}.tex"))
 

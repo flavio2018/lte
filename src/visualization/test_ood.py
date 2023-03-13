@@ -115,6 +115,7 @@ def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, 
 			model.eval()
 			Y_model = Y[:, :-1] if use_y else None
 			output = model(X, Y=Y_model, tf=tf)
+			lenY = torch.tensor(lenY, device=X.device)
 
 			if isinstance(model, UTwRegressionHead):
 				classification_outputs, regression_outputs = output

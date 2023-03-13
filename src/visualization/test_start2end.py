@@ -373,8 +373,8 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 
 		with torch.no_grad():
 			if isinstance(model, UniversalTransformer):
-	            output = model(X, Y=None, tf=tf)
-	            running = torch.tensor([True]*X.size(0))
+				output = model(X, Y=None, tf=tf)
+				running = torch.tensor([True]*X.size(0))
 			else:
 				output = model(X, Y, tf=tf, max_nes=n)
 				running = model.running[-1]

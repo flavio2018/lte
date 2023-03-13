@@ -8,7 +8,7 @@ import os
 from data.generator import LTEGenerator, LTEStepsGenerator, get_mins_maxs_from_mask
 from model.regression_tran import UTwRegressionHead
 from model.ut.UniversalTransformer import UniversalTransformer
-from model.test import batch_acc, _fix_output_shape
+from model.test import batch_acc, batch_seq_acc, _fix_output_shape
 import warnings
 
 

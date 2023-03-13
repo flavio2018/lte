@@ -176,7 +176,7 @@ def batch_acc(outputs, targets, vocab_size, generator):
 		outputs = torch.concat([o.unsqueeze(1) for o in outputs], dim=1)	
 	idx_pad = generator.y_vocab[_PAD]
 	idx_targets = targets.argmax(dim=-1)
-	mask = (idx_targets != idx_pad)
+	mask = (idx_targets != idx_pad).to(outputs.device)
 	idx_outs = outputs.argmax(dim=-1)
 	out_equal_target = (idx_outs == idx_targets).type(torch.FloatTensor)
 	valid_out_equal_target = torch.masked_select(out_equal_target, mask)

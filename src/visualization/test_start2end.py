@@ -33,7 +33,7 @@ def main(cfg):
 	model = load_model(cfg, lte)
 	if cfg.multi:
 		model = ModelWrapper(model, cfg)
-		tricks = '_tricks' if cfg.tricks else ''
+	tricks = '_tricks' if cfg.tricks else ''
 
 	ax, df = test_ood_start2end(model, lte, 10, generator_kwargs={'batch_size': cfg.bs,
 																	 'start_to_end': cfg.start_to_end,

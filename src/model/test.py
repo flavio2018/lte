@@ -185,6 +185,18 @@ def batch_acc(outputs, targets, vocab_size, generator):
 	return masked_out_equal_target.sum() / (num_targets - num_masked)
 
 
+def batch_seq_acc(outputs, targets, generator, len_Y):
+	idx_pad = generator.y_vocab[_PAD]
+	idx_targets = targets.argmax(dim=-1)
+	mask = (idx_targets != idx_pad).type(torch.int32)
+	idx_outs = outputs.argmax(dim=-1)
+	out_equal_target = (idx_outs == idx_targets).type(torch.int32)
+	masked_out_equal_target = out_equal_target * mask
+	num_equal_chars_per_seq = masked_out_equal_target.sum(dim=-1)
+	pred_is_exact = (num_equal_chars_per_seq == torch.tensor(len_Y, device=outputs.device)).type(torch.int32)
+	return pred_is_exact.mean(), pred_is_exact.std()
+
+
 def get_lengths_(batch):
 	EOS_idx = batch.size(2) - 2
 	lengths = torch.zeros(batch.size(0)) - 1  # seq -> len

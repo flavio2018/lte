@@ -12,7 +12,7 @@ import os
 from data.generator import LTEGenerator, LTEStepsGenerator, get_mins_maxs_from_mask
 from model.regression_tran import UTwRegressionHead
 from model.ut.UniversalTransformer import UniversalTransformer
-from model.test import batch_acc, _fix_output_shape
+from model.test import batch_acc, batch_seq_acc, _fix_output_shape
 from output_dfa import output_dfa
 from visualization.test_ood import build_generator, load_model
 import warnings
@@ -361,6 +361,7 @@ class ModelWrapper:
 
 def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=None, plot_ax=None, plot_label=None):
 	accuracy_values = []
+	seq_acc_values = []
 	nesting_values = []
 	survivors = []
 
@@ -390,14 +391,18 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 				output = _fix_output_shape(output, Y[:, 1:], generator)
 
 			acc = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
+			seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)
 			accuracy_values += [acc.item()]
+			seq_acc_avg += [seq_acc_avg.item()]
 		else:
 			accuracy_values += [0]
+			seq_acc_avg += [0]
 		nesting_values += [n]
 		survivors += [running.sum()]
 
 	df = pd.DataFrame()
 	df['Character Accuracy'] = accuracy_values
+	df['Sequence Accuracy'] = seq_acc_values
 	df['Nesting'] = nesting_values
 
 	ax = sns.barplot(data=df, x='Nesting', y='Character Accuracy', label=plot_label, ax=plot_ax, color='tab:blue')

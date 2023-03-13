@@ -375,6 +375,7 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 			X, Y, lenX, lenY, mask = values
 		else:
 			X, Y, lenX, lenY = values
+		lenY = torch.tensor(lenY, device=X.device)
 
 		with torch.no_grad():
 			if isinstance(model, UniversalTransformer):
@@ -385,7 +386,7 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 				running = model.running[-1]
 		
 		if running.any():
-			output, Y = output[running], Y[running]
+			output, Y, lenY = output[running], Y[running], lenY[running]
 			if output.size() != Y[:, 1:].size():
 				warn_str = f"Outputs shape {output.size()} different from targets shape {Y[:, 1:].size()}. Fixing."
 				logging.info(warn_str)

@@ -21,10 +21,12 @@ def main(cfg):
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
 	metric = 'characc'
-	ax, df = test_ood(model, lte, 'nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs)
+	ax, df = test_ood(model, lte, 'Nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs)
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/figures/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.pdf"))
-	df["Character Accuracy"].T.to_latex(os.path.join(hydra.utils.get_original_cwd(),
+	df = df.set_index('Nesting')
+	df = np.round(df, 2)
+	df.T.to_latex(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/tables/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.tex"))	
 	if isinstance(model, UTwRegressionHead):
 		plt.clf()
@@ -89,14 +91,17 @@ def check_output_shape(output, Y, generator):
 
 def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, generator_kwargs=None, plot_ax=None, plot_label=None, regr=False):
 	accuracy_values = []
+	accuracy_std_values = []
+	seq_acc_values = []
+	seq_acc_std_values = []
 	huber_loss_values = []
 	dp_values = []  # dp = distribution parameter
 	
 	for dp_value in range(1, max_dp_value+1):
 		print("---", dp_name, dp_value, "---")
-		if dp_name == 'length':
+		if dp_name.lower() == 'length':
 			values = generator.generate_batch(dp_value, 1, **generator_kwargs)
-		elif dp_name == 'nesting':
+		elif dp_name.lower() == 'nesting':
 			values = generator.generate_batch(1, dp_value, **generator_kwargs)
 		else:
 			raise ValueError(f"Wrong distribution parameter: {dp_name}")
@@ -114,13 +119,17 @@ def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, 
 			if isinstance(model, UTwRegressionHead):
 				classification_outputs, regression_outputs = output
 				classification_outputs = check_output_shape(classification_outputs, Y, generator)
-				acc = batch_acc(classification_outputs, Y[:, 1:], Y.size(-1), generator)
+				avg_acc, _ = batch_acc(classification_outputs, Y[:, 1:], Y.size(-1), generator)
 				regression_loss = torch.nn.functional.huber_loss(regression_outputs.squeeze(), get_mins_maxs_from_mask(mask))
 				huber_loss_values += [regression_loss.item()]
 			else:
 				output = check_output_shape(output, Y, generator)
-				acc = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
-			accuracy_values += [acc.item()]
+				avg_acc, std_acc = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
+				seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)
+				accuracy_values += [avg_acc.item()]
+				accuracy_std_values += [std_acc.item()]
+				seq_acc_values += [seq_acc_avg.item()]
+				seq_acc_std_values += [seq_acc_std.item()]
 			dp_values += [dp_value]
 	
 	df = pd.DataFrame()
@@ -130,6 +139,10 @@ def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, 
 	else:
 		y_axis = 'Character Accuracy'
 		df[y_axis] = accuracy_values
+		df['Character Accuracy Std'] = accuracy_std_values
+		df['Sequence Accuracy'] = seq_acc_values
+		df['Sequence Accuracy Std'] = seq_acc_std_values
+		
 	df[dp_name] = dp_values
 	
 	ax = sns.barplot(data=df, x=dp_name, y=y_axis, label=plot_label, ax=plot_ax, color='tab:blue')

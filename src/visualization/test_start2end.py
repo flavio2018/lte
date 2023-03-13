@@ -361,7 +361,9 @@ class ModelWrapper:
 
 def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=None, plot_ax=None, plot_label=None):
 	accuracy_values = []
+	accuracy_std_values = []
 	seq_acc_values = []
+	seq_acc_std_values = []
 	nesting_values = []
 	survivors = []
 
@@ -390,10 +392,12 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 				warnings.warn(warn_str)
 				output = _fix_output_shape(output, Y[:, 1:], generator)
 
-			acc = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
+			acc_avg, acc_std = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
 			seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)
-			accuracy_values += [acc.item()]
+			accuracy_values += [acc_avg.item()]
+			accuracy_std_values += [acc_std.item()]
 			seq_acc_values += [seq_acc_avg.item()]
+			seq_acc_std_values += [seq_acc_std.item()]
 		else:
 			accuracy_values += [0]
 			seq_acc_avg += [0]
@@ -402,7 +406,9 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 
 	df = pd.DataFrame()
 	df['Character Accuracy'] = accuracy_values
+	df['Character Accuracy Std'] = accuracy_std_values
 	df['Sequence Accuracy'] = seq_acc_values
+	df['Sequence Accuracy Std'] = seq_acc_std_values
 	df['Nesting'] = nesting_values
 
 	ax = sns.barplot(data=df, x='Nesting', y='Character Accuracy', label=plot_label, ax=plot_ax, color='tab:blue')

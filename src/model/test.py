@@ -176,13 +176,11 @@ def batch_acc(outputs, targets, vocab_size, generator):
 		outputs = torch.concat([o.unsqueeze(1) for o in outputs], dim=1)	
 	idx_pad = generator.y_vocab[_PAD]
 	idx_targets = targets.argmax(dim=-1)
-	mask = (idx_targets != idx_pad).type(torch.int32)
+	mask = (idx_targets != idx_pad)
 	idx_outs = outputs.argmax(dim=-1)
-	out_equal_target = (idx_outs == idx_targets).type(torch.int32)
-	masked_out_equal_target = out_equal_target * mask
-	num_masked = (mask == 0).sum()
-	num_targets = idx_targets.size(0) * idx_targets.size(1)
-	return masked_out_equal_target.sum() / (num_targets - num_masked)
+	out_equal_target = (idx_outs == idx_targets).type(torch.FloatTensor)
+	valid_out_equal_target = torch.masked_select(out_equal_target, mask)
+	return valid_out_equal_target.mean(), valid_out_equal_target.std()
 
 
 def batch_seq_acc(outputs, targets, generator, len_Y):

@@ -191,7 +191,7 @@ def batch_seq_acc(outputs, targets, generator, len_Y):
 	out_equal_target = (idx_outs == idx_targets).type(torch.int32)
 	masked_out_equal_target = out_equal_target * mask
 	num_equal_chars_per_seq = masked_out_equal_target.sum(dim=-1)
-	pred_is_exact = (num_equal_chars_per_seq == torch.tensor(len_Y, device=outputs.device)).type(torch.FloatTensor)
+	pred_is_exact = (num_equal_chars_per_seq == len_Y).type(torch.FloatTensor)
 	return pred_is_exact.mean(), pred_is_exact.std()
 
 

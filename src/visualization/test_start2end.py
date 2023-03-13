@@ -42,8 +42,8 @@ def main(cfg):
 																	 'ops': cfg.ops})
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/figures/{cfg.ckpt[:-4]}_start2end{tricks}.pdf"))
-	df["Character Accuracy"].T.to_latex(os.path.join(hydra.utils.get_original_cwd(),
-		f"../reports/tables/{cfg.ckpt[:-4]}_start2end{tricks}.tex"))	
+	df["Character Accuracy"].T.style.to_latex(os.path.join(hydra.utils.get_original_cwd(),
+		f"../reports/tables/{cfg.ckpt[:-4]}_start2end{tricks}.tex"))
 
 def contain_one_space(outputs):
 	return (np.char.count(outputs, ' ', start=1, end=-1) == 1)

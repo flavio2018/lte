@@ -201,7 +201,7 @@ class LTEStepsGenerator(LTEGenerator):
                 samples.append(list(x))
             targets.append([_SOS] + list(y) + [_EOS])
             samples_len.append(len(samples[-1]))
-            targets_len.append(len(targets[-1]))
+            targets_len.append(len(targets[-1]) - 1)  # exclude SOS
         
         batch_x = self._build_batch(samples)
         batch_y = self._build_batch(targets, y=True)

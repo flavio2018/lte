@@ -31,10 +31,11 @@ def main(cfg):
 			level=logging.INFO)
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
-	wrapped_model = ModelWrapper(model, cfg)
-	tricks = '_tricks' if cfg.tricks else ''
+	if cfg.multi:
+		model = ModelWrapper(model, cfg)
+		tricks = '_tricks' if cfg.tricks else ''
 
-	ax, df = test_ood_start2end(wrapped_model, lte, 10, generator_kwargs={'batch_size': cfg.bs,
+	ax, df = test_ood_start2end(model, lte, 10, generator_kwargs={'batch_size': cfg.bs,
 																	 'start_to_end': cfg.start_to_end,
 																	 'filtered_s2e': cfg.filtered_s2e,
 																	 'split': 'test',
@@ -371,9 +372,13 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 			X, Y, lenX, lenY = values
 
 		with torch.no_grad():
-			output = model(X, Y, tf=tf, max_nes=n)
+			if isinstance(model, UniversalTransformer):
+	            output = model(X, Y=None, tf=tf)
+	            running = torch.tensor([True]*X.size(0))
+			else:
+				output = model(X, Y, tf=tf, max_nes=n)
+				running = model.running[-1]
 		
-		running = model.running[-1]
 		if running.any():
 			output, Y = output[running], Y[running]
 			if output.size() != Y[:, 1:].size():
@@ -394,7 +399,8 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 	df['Nesting'] = nesting_values
 
 	ax = sns.barplot(data=df, x='Nesting', y='Character Accuracy', label=plot_label, ax=plot_ax, color='tab:blue')
-	ax = sns.lineplot(x=range(max_nes-2), y=[s/generator_kwargs['batch_size'] for s in survivors], marker='o', color='tab:cyan')
+	if isinstance(model, ModelWrapper):
+		ax = sns.lineplot(x=range(max_nes-2), y=[s/generator_kwargs['batch_size'] for s in survivors], marker='o', color='tab:cyan')
 	return ax, df
 
 if __name__ == "__main__":

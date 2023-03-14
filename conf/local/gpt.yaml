@@ -1,0 +1,29 @@
+defaults:
+        - override hydra/hydra_logging: none
+        - override hydra/job_logging: custom
+        - _self_
+
+hydra:
+  run:
+    dir: ../hydra/${hydra.job.name}/${now:%Y-%B-%d_%H-%M-%S}
+
+#run
+codename: 'gpt'
+device: 'cuda'
+max_nesting: 10
+num_samples: 10
+run_dt: ${now:%Y-%B-%d_%H-%M-%S}
+
+# openai api
+model_kind: 'completion'  # chat
+model: 'text-davinci-003'  # 'gpt-3.5-turbo'
+
+# data
+step_generator: true
+same_vocab: false
+simplify_w_value: false
+filtered_swv: false
+start_to_end: false
+filtered_s2e: true
+ops: 'asm'
+bs: 100

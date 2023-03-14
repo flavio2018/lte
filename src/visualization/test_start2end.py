@@ -424,7 +424,7 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 
 	ax = sns.barplot(data=df, x='Nesting', y='Character Accuracy', label=plot_label, ax=plot_ax, color='tab:blue')
 	if isinstance(model, ModelWrapper):
-		ax = sns.lineplot(x=range(max_nes-2), y=[s/generator_kwargs['batch_size'] for s in avg_survivors], marker='o', color='tab:cyan')
+		ax = sns.lineplot(x=range(max_nes-1), y=[s/generator_kwargs['batch_size'] for s in avg_survivors], marker='o', color='tab:cyan')
 	return ax, df
 
 if __name__ == "__main__":

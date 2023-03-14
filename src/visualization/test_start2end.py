@@ -368,7 +368,7 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 	avg_survivors = []
 	std_survivors = []
 
-	for n in range(3, max_nes+1):
+	for n in range(2, max_nes+1):
 		logging.info(f"\n--- nesting {n} ---")
 		same_nes_acc, same_nes_seq_acc, same_nes_survivors = np.zeros(num_samples), np.zeros(num_samples), np.zeros(num_samples)
 

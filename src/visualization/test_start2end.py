@@ -359,7 +359,7 @@ class ModelWrapper:
 		
 		return next_input, running
 
-def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=None, plot_ax=None, plot_label=None):
+def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, generator_kwargs=None, plot_ax=None, plot_label=None):
 	accuracy_values = []
 	accuracy_std_values = []
 	seq_acc_values = []
@@ -369,41 +369,46 @@ def test_ood_start2end(model, generator, max_nes, tf=False, generator_kwargs=Non
 
 	for n in range(3, max_nes+1):
 		logging.info(f"\n--- nesting {n} ---")
-		values = generator.generate_batch(1, n, **generator_kwargs)
+		same_nes_acc, same_nes_seq_acc = np.zeros(num_samples), np.zeros(num_samples)
 
-		if isinstance(generator, LTEStepsGenerator):
-			X, Y, lenX, lenY, mask = values
-		else:
-			X, Y, lenX, lenY = values
-		lenY = torch.tensor(lenY, device=X.device)
+		for sample_idx in range(num_samples):
+			values = generator.generate_batch(1, n, **generator_kwargs)
 
-		with torch.no_grad():
-			if isinstance(model, UniversalTransformer):
-				output = model(X, Y=None, tf=tf)
-				running = torch.tensor([True]*X.size(0))
+			if isinstance(generator, LTEStepsGenerator):
+				X, Y, lenX, lenY, mask = values
 			else:
-				output = model(X, Y, tf=tf, max_nes=n)
-				running = model.running[-1]
-		
-		if running.any():
-			output, Y, lenY = output[running], Y[running], lenY[running]
-			if output.size() != Y[:, 1:].size():
-				warn_str = f"Outputs shape {output.size()} different from targets shape {Y[:, 1:].size()}. Fixing."
-				logging.info(warn_str)
-				warnings.warn(warn_str)
-				output = _fix_output_shape(output, Y[:, 1:], generator)
+				X, Y, lenX, lenY = values
+			lenY = torch.tensor(lenY, device=X.device)
 
-			acc_avg, acc_std = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
-			seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)
-			accuracy_values += [acc_avg.item()]
-			accuracy_std_values += [acc_std.item()]
-			seq_acc_values += [seq_acc_avg.item()]
-			seq_acc_std_values += [seq_acc_std.item()]
-		else:
-			accuracy_values += [0]
-			seq_acc_avg += [0]
-		nesting_values += [n]
-		survivors += [running.sum()]
+			with torch.no_grad():
+				if isinstance(model, UniversalTransformer):
+					output = model(X, Y=None, tf=tf)
+					running = torch.tensor([True]*X.size(0))
+				else:
+					output = model(X, Y, tf=tf, max_nes=n)
+					running = model.running[-1]
+			
+			if running.any():
+				output, Y, lenY = output[running], Y[running], lenY[running]
+				if output.size() != Y[:, 1:].size():
+					warn_str = f"Outputs shape {output.size()} different from targets shape {Y[:, 1:].size()}. Fixing."
+					logging.info(warn_str)
+					warnings.warn(warn_str)
+					output = _fix_output_shape(output, Y[:, 1:], generator)
+
+				acc_avg, acc_std = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
+				seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)
+				same_nes_acc[sample_idx] = avg_acc.item()
+				same_nes_seq_acc[sample_idx] = seq_acc_avg.item()
+			else:
+				same_nes_acc[sample_idx] = 0
+				same_nes_seq_acc[sample_idx] = 0
+			accuracy_values += [same_nes_acc.mean()]
+			seq_acc_values += [same_nes_seq_acc.mean()]
+			accuracy_std_values += [same_nes_acc.std()]
+			seq_acc_std_values += [same_nes_seq_acc.std()]
+			nesting_values += [n]
+			survivors += [running.sum()]
 
 	df = pd.DataFrame()
 	df['Character Accuracy'] = accuracy_values

@@ -405,13 +405,13 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 			else:
 				same_nes_acc[sample_idx] = 0
 				same_nes_seq_acc[sample_idx] = 0
-			accuracy_values += [same_nes_acc.mean()]
-			seq_acc_values += [same_nes_seq_acc.mean()]
-			accuracy_std_values += [same_nes_acc.std()]
-			seq_acc_std_values += [same_nes_seq_acc.std()]
-			avg_survivors += [same_nes_survivors.mean()]
-			std_survivors += [same_nes_survivors.std()]
-			nesting_values += [n]
+		accuracy_values += [same_nes_acc.mean()]
+		seq_acc_values += [same_nes_seq_acc.mean()]
+		accuracy_std_values += [same_nes_acc.std()]
+		seq_acc_std_values += [same_nes_seq_acc.std()]
+		avg_survivors += [same_nes_survivors.mean()]
+		std_survivors += [same_nes_survivors.std()]
+		nesting_values += [n]
 
 	df = pd.DataFrame()
 	df['Character Accuracy'] = accuracy_values

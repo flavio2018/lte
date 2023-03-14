@@ -89,7 +89,7 @@ def check_output_shape(output, Y, generator):
 		return output
 
 
-def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, generator_kwargs=None, plot_ax=None, plot_label=None, regr=False):
+def test_ood(model, generator, dp_name, num_samples=10, max_dp_value=10, use_y=False, tf=False, generator_kwargs=None, plot_ax=None, plot_label=None, regr=False):
 	accuracy_values = []
 	accuracy_std_values = []
 	seq_acc_values = []
@@ -99,39 +99,44 @@ def test_ood(model, generator, dp_name, max_dp_value=10, use_y=False, tf=False, 
 	
 	for dp_value in range(1, max_dp_value+1):
 		print("---", dp_name, dp_value, "---")
-		if dp_name.lower() == 'length':
-			values = generator.generate_batch(dp_value, 1, **generator_kwargs)
-		elif dp_name.lower() == 'nesting':
-			values = generator.generate_batch(1, dp_value, **generator_kwargs)
-		else:
-			raise ValueError(f"Wrong distribution parameter: {dp_name}")
-		
-		if isinstance(generator, LTEStepsGenerator):
-			X, Y, lenX, lenY, mask = values
-		else:
-			X, Y, lenX, lenY = values
-		
-		with torch.no_grad():
-			model.eval()
-			Y_model = Y[:, :-1] if use_y else None
-			output = model(X, Y=Y_model, tf=tf)
-			lenY = torch.tensor(lenY, device=X.device)
 
-			if isinstance(model, UTwRegressionHead):
-				classification_outputs, regression_outputs = output
-				classification_outputs = check_output_shape(classification_outputs, Y, generator)
-				avg_acc, _ = batch_acc(classification_outputs, Y[:, 1:], Y.size(-1), generator)
-				regression_loss = torch.nn.functional.huber_loss(regression_outputs.squeeze(), get_mins_maxs_from_mask(mask))
-				huber_loss_values += [regression_loss.item()]
+		for sample_idx in range(num_samples):
+			same_nes_acc, same_nes_seq_acc = np.zeros(num_samples), np.zeros(num_samples)
+			if dp_name.lower() == 'length':
+				values = generator.generate_batch(dp_value, 1, **generator_kwargs)
+			elif dp_name.lower() == 'nesting':
+				values = generator.generate_batch(1, dp_value, **generator_kwargs)
 			else:
-				output = check_output_shape(output, Y, generator)
-				avg_acc, std_acc = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
-				seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)
-				accuracy_values += [avg_acc.item()]
-				accuracy_std_values += [std_acc.item()]
-				seq_acc_values += [seq_acc_avg.item()]
-				seq_acc_std_values += [seq_acc_std.item()]
-			dp_values += [dp_value]
+				raise ValueError(f"Wrong distribution parameter: {dp_name}")
+			
+			if isinstance(generator, LTEStepsGenerator):
+				X, Y, lenX, lenY, mask = values
+			else:
+				X, Y, lenX, lenY = values
+			
+			with torch.no_grad():
+				model.eval()
+				Y_model = Y[:, :-1] if use_y else None
+				output = model(X, Y=Y_model, tf=tf)
+				lenY = torch.tensor(lenY, device=X.device)
+
+				if isinstance(model, UTwRegressionHead):
+					classification_outputs, regression_outputs = output
+					classification_outputs = check_output_shape(classification_outputs, Y, generator)
+					avg_acc, _ = batch_acc(classification_outputs, Y[:, 1:], Y.size(-1), generator)
+					regression_loss = torch.nn.functional.huber_loss(regression_outputs.squeeze(), get_mins_maxs_from_mask(mask))
+					huber_loss_values += [regression_loss.item()]
+				else:
+					output = check_output_shape(output, Y, generator)
+					avg_acc, std_acc = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
+					seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)
+					same_nes_acc[sample_idx] = avg_acc.item()
+					same_nes_seq_acc[sample_idx] = seq_acc_avg.item()
+		accuracy_values += [same_nes_acc.mean()]
+		seq_acc_values += [same_nes_seq_acc.mean()]
+		accuracy_std_values += [same_nes_acc.std()]
+		seq_acc_std_values += [same_nes_seq_acc.std()]
+		dp_values += [dp_value]
 	
 	df = pd.DataFrame()
 	if regr:

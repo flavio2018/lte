@@ -16,7 +16,7 @@ run_dt: ${now:%Y-%B-%d_%H-%M-%S}
 
 # openai api
 model_kind: 'completion'  # chat
-model: 'text-davinci-003'  # 'gpt-3.5-turbo'
+model_name: 'text-davinci-003'  # 'gpt-3.5-turbo'
 
 # data
 step_generator: true

@@ -1,4 +1,5 @@
 import hydra
+import omegaconf
 import openai
 import os
 import time
@@ -22,11 +23,11 @@ def main(cfg):
 	lte, lte_kwargs = build_generator(cfg)
 	ax, df = test_ood(lte, lte_kwargs, cfg, max_nesting=cfg.max_nesting, num_samples=cfg.num_samples)
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
-		f"../reports/figures/{cfg.model}_start2end.pdf"))
+		f"../reports/figures/{cfg.model_name}_start2end.pdf"))
 	df = df.set_index('Nesting')
 	df = np.round(df, 2)
 	df.T.to_latex(os.path.join(hydra.utils.get_original_cwd(),
-		f"../reports/tables/{cfg.model}_start2end.tex"))
+		f"../reports/tables/{cfg.model_name}_start2end.tex"))
 
 
 def test_ood(generator, generator_kwargs, cfg, max_nesting=10, num_samples=10):
@@ -88,7 +89,7 @@ def test_ood(generator, generator_kwargs, cfg, max_nesting=10, num_samples=10):
 def make_request(prompt, cfg):
 	if cfg.model_kind == 'completion':
 		res = openai.Completion.create(
-			model=cfg.model,
+			model=cfg.model_name,
 			prompt=prompt,
 			stop='<END>',
 		)
@@ -96,7 +97,7 @@ def make_request(prompt, cfg):
 		answer = preprocess_output_davinci(answer)
 	elif cfg.model_kind == 'chat':
 		res = openai.ChatCompletion.create(
-			model=cfg.model,
+			model=cfg.model_name,
 			messages=[{"role": "user", "content": prompt}],
 		)
 		answer = res['choices'][0]['message']['content'].strip()
@@ -105,9 +106,9 @@ def make_request(prompt, cfg):
 		raise ValueError(f'Wrong model kind {cfg.model_kind}.')
 	
 	# save model output
-	with open(os.path.join(hydra.utils.get_original_cwd(), f"../chatgpt/res/{cfg.run_dt}_{cfg.model}.txt"), 'a') as res_f:
+	with open(os.path.join(hydra.utils.get_original_cwd(), f"../chatgpt/res/{cfg.run_dt}_{cfg.model_name}.txt"), 'a') as res_f:
 		res_f.write(json.dumps(res)+'\n')
-	with open(os.path.join(hydra.utils.get_original_cwd(), f"../chatgpt/ans/{cfg.run_dt}_{cfg.model}.txt"), 'a') as ans_f:
+	with open(os.path.join(hydra.utils.get_original_cwd(), f"../chatgpt/ans/{cfg.run_dt}_{cfg.model_name}.txt"), 'a') as ans_f:
 		ans_f.write(prompt+'\n')
 		ans_f.write(answer+'\n')
 

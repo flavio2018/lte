@@ -1,6 +1,7 @@
 import hydra
 import openai
 import os
+import time
 import warnings
 import json
 import torch
@@ -45,7 +46,10 @@ def test_ood(generator, generator_kwargs, cfg, max_nesting=10, num_samples=10):
 			answers = []
 
 			for prompt in prompts:
-				answer = make_request(prompt, cfg)
+				try:
+					answer = make_request(prompt, cfg)
+				except openai.error.RateLimitError:
+					time.sleep(1)
 				if answer != '#':
 					answers.append(list(answer) + ['.'])
 				else:

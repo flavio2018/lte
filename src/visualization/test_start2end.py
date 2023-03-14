@@ -36,10 +36,10 @@ def main(cfg):
 	tricks = '_tricks' if cfg.tricks else ''
 
 	ax, df = test_ood_start2end(model, lte, 10, generator_kwargs={'batch_size': cfg.bs,
-																	 'start_to_end': cfg.start_to_end,
-																	 'filtered_s2e': cfg.filtered_s2e,
-																	 'split': 'test',
-																	 'ops': cfg.ops})
+																 'start_to_end': cfg.start_to_end,
+																 'filtered_s2e': cfg.filtered_s2e,
+																 'split': 'test',
+																 'ops': cfg.ops})
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/figures/{cfg.ckpt[:-4]}_start2end{tricks}.pdf"))
 	df = df.set_index('Nesting')
@@ -398,7 +398,7 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 
 				acc_avg, acc_std = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
 				seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)
-				same_nes_acc[sample_idx] = avg_acc.item()
+				same_nes_acc[sample_idx] = acc_avg.item()
 				same_nes_seq_acc[sample_idx] = seq_acc_avg.item()
 			else:
 				same_nes_acc[sample_idx] = 0

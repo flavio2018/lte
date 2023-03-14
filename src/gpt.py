@@ -41,7 +41,7 @@ def test_ood(generator, generator_kwargs, cfg, max_nesting=10, num_samples=10):
 		for sample_idx in range(num_samples):
 			X, Y, lenX, lenY, mask = generator.generate_batch(1, nes_value, **generator_kwargs)
 			lenY = torch.tensor(lenY, device=X.device)
-			prompts = ["Solve " + x.replace('#', '') for x in generator.x_to_str(X)]
+			prompts = build_prompts(X, generator, generator_kwargs)
 			answers = []
 
 			for prompt in prompts:
@@ -86,6 +86,7 @@ def make_request(prompt, cfg):
 		res = openai.Completion.create(
 			model=cfg.model,
 			prompt=prompt,
+			stop='<END>',
 		)
 		answer = res['choices'][0]['text'].strip()
 		answer = preprocess_output_davinci(answer)
@@ -107,6 +108,16 @@ def make_request(prompt, cfg):
 		ans_f.write(answer+'\n')
 
 	return answer
+
+
+def build_prompts(X, generator, generator_kwargs):
+	generator_kwargs['split'] = 'valid'
+	X_examples, Y_examples, _, _, _ = generator.generate_batch(1, 3, **generator_kwargs)
+	generator_kwargs['split'] = 'test'
+	X, X_examples, Y_examples = generator.x_to_str(X), generator.x_to_str(X_examples), generator.y_to_str(Y_examples)
+	examples = [x.replace('#', '') + ' = ' + y.replace('#', '').replace('?', '').replace('.', '') + ' <END>' for x, y in zip(X_examples, Y_examples)]
+	queries = [x.replace('#', '') + ' = ' for x in X]
+	return ['\n'.join([e, q]) for e, q in zip(examples, queries)]
 
 
 def preprocess_output_davinci(output):

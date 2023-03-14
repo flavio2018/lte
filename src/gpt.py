@@ -47,10 +47,12 @@ def test_ood(generator, generator_kwargs, cfg, max_nesting=10, num_samples=10):
 			answers = []
 
 			for prompt in prompts:
-				try:
-					answer = make_request(prompt, cfg)
-				except openai.error.RateLimitError:
-					time.sleep(1)
+				answer = ''
+				while answer == '':
+					try:
+						answer = make_request(prompt, cfg)
+					except openai.error.RateLimitError:
+						time.sleep(1)
 				if answer != '#':
 					answers.append(list(answer) + ['.'])
 				else:

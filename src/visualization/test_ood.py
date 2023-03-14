@@ -100,9 +100,9 @@ def test_ood(model, generator, dp_name, num_samples=10, max_dp_value=10, use_y=F
 	
 	for dp_value in range(1, max_dp_value+1):
 		print("---", dp_name, dp_value, "---")
+		same_nes_acc, same_nes_seq_acc = np.zeros(num_samples), np.zeros(num_samples)
 
 		for sample_idx in range(num_samples):
-			same_nes_acc, same_nes_seq_acc = np.zeros(num_samples), np.zeros(num_samples)
 			if dp_name.lower() == 'length':
 				values = generator.generate_batch(dp_value, 1, **generator_kwargs)
 			elif dp_name.lower() == 'nesting':

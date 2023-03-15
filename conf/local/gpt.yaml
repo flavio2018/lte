@@ -10,6 +10,7 @@ hydra:
 #run
 codename: 'gpt'
 device: 'cuda'
+min_nesting: 1
 max_nesting: 10
 num_samples: 10
 run_dt: ${now:%Y-%B-%d_%H-%M-%S}

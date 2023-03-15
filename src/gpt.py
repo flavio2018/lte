@@ -21,7 +21,7 @@ from visualization.test_ood import build_generator
 def main(cfg):
 	openai.api_key = os.getenv("OPENAI_API_KEY")
 	lte, lte_kwargs = build_generator(cfg)
-	ax, df = test_ood(lte, lte_kwargs, cfg, max_nesting=cfg.max_nesting, num_samples=cfg.num_samples)
+	ax, df = test_ood(lte, lte_kwargs, cfg, min_nesting=cfg.min_nesting, max_nesting=cfg.max_nesting, num_samples=cfg.num_samples)
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/figures/{cfg.model_name}_start2end.pdf"))
 	df = df.set_index('Nesting')
@@ -30,14 +30,14 @@ def main(cfg):
 		f"../reports/tables/{cfg.model_name}_start2end.tex"))
 
 
-def test_ood(generator, generator_kwargs, cfg, max_nesting=10, num_samples=10):
+def test_ood(generator, generator_kwargs, cfg, min_nesting=1, max_nesting=10, num_samples=10):
 	accuracy_values = []
 	accuracy_std_values = []
 	seq_acc_values = []
 	seq_acc_std_values = []
 	nesting_values = []
 
-	for nes_value in range(1, max_nesting+1):
+	for nes_value in range(min_nesting, max_nesting+1):
 		same_nes_acc, same_nes_seq_acc = np.zeros(num_samples), np.zeros(num_samples)
 
 		for sample_idx in range(num_samples):

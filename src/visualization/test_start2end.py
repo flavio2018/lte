@@ -368,7 +368,7 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 	avg_survivors = []
 	std_survivors = []
 
-	for n in range(2, max_nes+1):
+	for n in range(1, max_nes+1):
 		logging.info(f"\n--- nesting {n} ---")
 		same_nes_acc, same_nes_seq_acc, same_nes_survivors = np.zeros(num_samples), np.zeros(num_samples), np.zeros(num_samples)
 
@@ -424,7 +424,7 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 
 	ax = sns.barplot(data=df, x='Nesting', y='Character Accuracy', label=plot_label, ax=plot_ax, color='tab:blue')
 	if isinstance(model, ModelWrapper):
-		ax = sns.lineplot(x=range(max_nes-1), y=[s/generator_kwargs['batch_size'] for s in avg_survivors], marker='o', color='tab:cyan')
+		ax = sns.lineplot(x=range(max_nes), y=[s/generator_kwargs['batch_size'] for s in avg_survivors], marker='o', color='tab:cyan')
 	return ax, df
 
 if __name__ == "__main__":

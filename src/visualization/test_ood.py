@@ -110,7 +110,7 @@ def test_ood(model, generator, dp_name, num_samples=10, max_dp_value=10, use_y=F
 	dp_values = []  # dp = distribution parameter
 	
 	for dp_value in range(1, max_dp_value+1):
-		print("---", dp_name, dp_value, "---")
+		logging.info("---", dp_name, dp_value, "---")
 		same_nes_acc, same_nes_seq_acc = np.zeros(num_samples), np.zeros(num_samples)
 
 		for sample_idx in range(num_samples):

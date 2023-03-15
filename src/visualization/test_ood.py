@@ -44,6 +44,8 @@ def build_generator(cfg):
 			"batch_size": cfg.bs,
 			"simplify_w_value": cfg.simplify_w_value,
 			"filtered_swv": cfg.filtered_swv,
+			"start_to_end": cfg.start_to_end,
+			"filtered_s2e": cfg.filtered_s2e,
 			"split": "test",
 			"ops": cfg.ops,
 		}

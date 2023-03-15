@@ -6,6 +6,7 @@ import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import datetime as dt
 from data.generator import LTEGenerator, LTEStepsGenerator, get_mins_maxs_from_mask
 from model.regression_tran import UTwRegressionHead
 from model.ut.UniversalTransformer import UniversalTransformer
@@ -19,6 +20,8 @@ def main(cfg):
 	model_id = 'regr_ut' if cfg.regr_ut else 'ut'
 	task_id = 'simplify_w_value' if cfg.simplify_w_value else 'simplify'
 	warnings.filterwarnings("always", category=UserWarning)
+	now_day = dt.now().strftime('%Y-%m-%d')
+	now_time = dt.now().strftime('%H:%M')
 	logging.basicConfig(filename=os.path.join(hydra.utils.get_original_cwd(), f'../logs/{now_day}_{now_time}_{cfg.ckpt[:-4]}_test_ood.txt'),
 			filemode='a',
 			format='%(message)s',

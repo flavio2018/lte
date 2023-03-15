@@ -6,7 +6,7 @@ import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import datetime as dt
+from datetime import datetime as dt
 from data.generator import LTEGenerator, LTEStepsGenerator, get_mins_maxs_from_mask
 from model.regression_tran import UTwRegressionHead
 from model.ut.UniversalTransformer import UniversalTransformer

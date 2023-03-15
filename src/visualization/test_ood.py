@@ -11,6 +11,7 @@ from model.regression_tran import UTwRegressionHead
 from model.ut.UniversalTransformer import UniversalTransformer
 from model.test import batch_acc, batch_seq_acc, _fix_output_shape
 import warnings
+import logging
 
 
 @hydra.main(config_path="../../conf/local", config_name="test_ood", version_base='1.2')
@@ -18,6 +19,11 @@ def main(cfg):
 	model_id = 'regr_ut' if cfg.regr_ut else 'ut'
 	task_id = 'simplify_w_value' if cfg.simplify_w_value else 'simplify'
 	warnings.filterwarnings("always", category=UserWarning)
+	logging.basicConfig(filename=os.path.join(hydra.utils.get_original_cwd(), f'../logs/{now_day}_{now_time}_{cfg.ckpt[:-4]}_test_ood.txt'),
+			filemode='a',
+			format='%(message)s',
+			datefmt='%H:%M:%S',
+			level=logging.INFO)
 
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
@@ -130,6 +136,8 @@ def test_ood(model, generator, dp_name, num_samples=10, max_dp_value=10, use_y=F
 					regression_loss = torch.nn.functional.huber_loss(regression_outputs.squeeze(), get_mins_maxs_from_mask(mask))
 					huber_loss_values += [regression_loss.item()]
 				else:
+					if dp_value == 1:
+						logging.info('\n'.join([f"{x} → {o}" for x, o in zip(generator.x_to_str(X), generator.y_to_str(output))]))
 					output = check_output_shape(output, Y, generator)
 					avg_acc, std_acc = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
 					seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)

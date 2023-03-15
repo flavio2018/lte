@@ -139,7 +139,7 @@ def test_ood(model, generator, dp_name, num_samples=10, max_dp_value=10, use_y=F
 					regression_loss = torch.nn.functional.huber_loss(regression_outputs.squeeze(), get_mins_maxs_from_mask(mask))
 					huber_loss_values += [regression_loss.item()]
 				else:
-					if dp_value == 1:
+					if dp_value <= 2:
 						logging.info('\n'.join([f"{x} → {o}" for x, o in zip(generator.x_to_str(X), generator.y_to_str(output))]))
 					output = check_output_shape(output, Y, generator)
 					avg_acc, std_acc = batch_acc(output, Y[:, 1:], Y.size(-1), generator)

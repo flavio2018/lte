@@ -25,7 +25,7 @@ def main(cfg):
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/figures/{cfg.model_name}_start2end.pdf"))
 	df = df.set_index('Nesting')
-	df = np.round(df, 2)
+	df = np.round(df, 5)
 	df.T.to_latex(os.path.join(hydra.utils.get_original_cwd(),
 		f"../reports/tables/{cfg.model_name}_start2end.tex"))
 

@@ -36,6 +36,7 @@ def test_ood(generator, generator_kwargs, cfg, min_nesting=1, max_nesting=10, nu
 	seq_acc_values = []
 	seq_acc_std_values = []
 	nesting_values = []
+	WAIT = 1 if cfg.model_name == 'text-davinci-003' else 3
 
 	for nes_value in range(min_nesting, max_nesting+1):
 		same_nes_acc, same_nes_seq_acc = np.zeros(num_samples), np.zeros(num_samples)

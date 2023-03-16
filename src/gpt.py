@@ -53,8 +53,8 @@ def test_ood(generator, generator_kwargs, cfg, min_nesting=1, max_nesting=10, nu
 					try:
 						answer = make_request(prompt, cfg)
 					except (openai.error.RateLimitError, openai.error.APIError) as e:
-						warnings.warn(e)
-						time.sleep(1)
+						warnings.warn(str(e))
+						time.sleep(WAIT)
 				if answer != '#':
 					answers.append(list(answer) + ['.'])
 				else:

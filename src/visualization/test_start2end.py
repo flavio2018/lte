@@ -34,6 +34,7 @@ def main(cfg):
 	if cfg.multi:
 		model = ModelWrapper(model, cfg)
 	tricks = '_tricks' if cfg.tricks else ''
+	n_samples = f'_{str(cfg.n_samples)}-samples'
 
 	ax, df = test_ood_start2end(model, lte, 10, generator_kwargs={'batch_size': cfg.bs,
 																 'start_to_end': cfg.start_to_end,
@@ -41,11 +42,11 @@ def main(cfg):
 																 'split': 'test',
 																 'ops': cfg.ops})
 	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
-		f"../reports/figures/{cfg.ckpt[:-4]}_start2end{tricks}.pdf"))
+		f"../reports/figures/{cfg.ckpt[:-4]}_start2end{tricks}{n_samples}.pdf"))
 	df = df.set_index('Nesting')
 	df = np.round(df, 5)
 	df.T.to_latex(os.path.join(hydra.utils.get_original_cwd(),
-		f"../reports/tables/{cfg.ckpt[:-4]}_start2end{tricks}.tex"))
+		f"../reports/tables/{cfg.ckpt[:-4]}_start2end{tricks}{n_samples}.tex"))
 
 def contain_one_space(outputs):
 	return (np.char.count(outputs, ' ', start=1, end=-1) == 1)

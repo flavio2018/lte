@@ -391,7 +391,7 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 					running = model.running[-1]
 			
 			if running.any():
-				output, Y, lenY = output[running], Y[running], lenY[running]
+				output[~running] = generator._build_batch([['#']*output.size(1)]*(~running).sum(), y=True)
 				if output.size() != Y[:, 1:].size():
 					warn_str = f"Outputs shape {output.size()} different from targets shape {Y[:, 1:].size()}. Fixing."
 					logging.info(warn_str)

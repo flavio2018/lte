@@ -463,7 +463,7 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 				seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)
 				same_nes_acc[sample_idx] = acc_avg.item()
 				same_nes_seq_acc[sample_idx] = seq_acc_avg.item()
-				same_nes_halting[sample_idx] = ~running.sum()
+				same_nes_halting[sample_idx] = (~running).sum()
 			else:
 				same_nes_acc[sample_idx] = 0
 				same_nes_seq_acc[sample_idx] = 0

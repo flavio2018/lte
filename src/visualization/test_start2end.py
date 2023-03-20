@@ -311,13 +311,9 @@ class ModelWrapper:
 			notwell_formed_running_inputs = chararray_inputs[~outputs_are_well_formed & running]
 			num_log_idx = 10 if notwell_formed_running_inputs.shape[0] > 10 else notwell_formed_running_inputs.shape[0]
 			log_idx = np.random.choice(notwell_formed_running_inputs.shape[0], size=num_log_idx, replace=False)
-			top2_logits, top2_idx = output_tensor[torch.tensor(~outputs_are_well_formed & running, device=output_tensor.device)][torch.tensor(log_idx[:10])].topk(k=2, dim=-1)
 			
 			logging.info('\n'.join([f"{i} → {o}"
 				for i, o in zip(notwell_formed_running_inputs[log_idx], chararray_outputs[~outputs_are_well_formed & running][log_idx])]))
-			logging.info("\nTop 2 logits & predictions for first 10 ill-formed model outputs")
-			logging.info('\n\n'.join([f"{logits[:max_cut_length]}\n{idx[:max_cut_length]}"
-				for logits, idx in zip(top2_logits.cpu().numpy().round(decimals=2), itos_f(top2_idx.cpu().numpy()))]))
 			
 		# check substring in input
 		inputs_do_contain_substrings = inputs_contain_substrings(chararray_inputs, chararray_outputs, running)
@@ -327,14 +323,10 @@ class ModelWrapper:
 			inputs_without_substring_running = chararray_inputs[~inputs_do_contain_substrings & running]
 			num_log_idx = 10 if inputs_without_substring_running.shape[0] > 10 else inputs_without_substring_running.shape[0]
 			log_idx = np.random.choice(inputs_without_substring_running.shape[0], size=num_log_idx, replace=False)
-			top2_logits, top2_idx = output_tensor[torch.tensor(~inputs_do_contain_substrings & running, device=output_tensor.device)][torch.tensor(log_idx[:10])].topk(k=2, dim=-1)
 			
 			logging.info('\n'.join([f"{i} → {o}"
 				for i, o in zip(inputs_without_substring_running[log_idx], chararray_outputs[~inputs_do_contain_substrings & running][log_idx])]))
-			logging.info("\nTop 2 logits & predictions for first 10 no-substring model outputs")
-			logging.info('\n\n'.join([f"{logits[:max_cut_length]}\n{idx[:max_cut_length]}"
-				for logits, idx in zip(top2_logits.cpu().numpy().round(decimals=2), itos_f(top2_idx.cpu().numpy()))]))
-		
+			
 		running &= inputs_do_contain_substrings
 		next_input = replace_substrings_in_inputs(chararray_inputs, chararray_outputs, running)
 

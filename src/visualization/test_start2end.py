@@ -28,7 +28,7 @@ def main(cfg):
 			filemode='a',
 			format='%(message)s',
 			datefmt='%H:%M:%S',
-			level=logging.INFO)
+			level=logging.DEBUG)
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
 	if cfg.multi:
@@ -261,7 +261,6 @@ class ModelWrapper:
 		return next_input, running
 
 	def multi_fwd_nofilter(self, X, n_samples, running, tf=False):
-		logging.info('Here')
 		def get_outputs_freq(outputs):
 			outputs_freq = dict()
 			for o in outputs:

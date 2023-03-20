@@ -304,6 +304,7 @@ class ModelWrapper:
 		
 		outputs_are_well_formed = contain_one_space(chararray_outputs)
 		logging.info(f"\n{(~outputs_are_well_formed & running).sum()} outputs are not well formed.")
+		running &= outputs_are_well_formed
 
 		# check substring in input
 		inputs_do_contain_substrings = inputs_contain_substrings(chararray_inputs, chararray_outputs, running)

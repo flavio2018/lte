@@ -261,6 +261,7 @@ class ModelWrapper:
 		return next_input, running
 
 	def multi_fwd_nofilter(self, X, n_samples, running, tf=False):
+		print('Here')
 		def get_outputs_freq(outputs):
 			outputs_freq = dict()
 			for o in outputs:

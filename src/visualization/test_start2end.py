@@ -288,7 +288,7 @@ class ModelWrapper:
 			for output, freq in outputs_freqs.items():
 				if freq > max_freq:
 					max_freq = freq
-					candidate = valid_output
+					candidate = output
 			assert candidate is not None
 			most_frequent_outputs.append(candidate)
 		chararray_outputs = np.array(most_frequent_outputs)

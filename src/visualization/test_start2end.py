@@ -426,12 +426,12 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 	seq_acc_values = []
 	seq_acc_std_values = []
 	nesting_values = []
-	avg_survivors = []
-	std_survivors = []
+	avg_halting = []
+	std_halting = []
 
 	for n in range(1, max_nes+1):
 		logging.info(f"\n--- nesting {n} ---")
-		same_nes_acc, same_nes_seq_acc, same_nes_survivors = np.zeros(num_samples), np.zeros(num_samples), np.zeros(num_samples)
+		same_nes_acc, same_nes_seq_acc, same_nes_halting = np.zeros(num_samples), np.zeros(num_samples), np.zeros(num_samples)
 
 		for sample_idx in range(num_samples):
 			values = generator.generate_batch(1, n, **generator_kwargs)
@@ -463,7 +463,7 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 				seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)
 				same_nes_acc[sample_idx] = acc_avg.item()
 				same_nes_seq_acc[sample_idx] = seq_acc_avg.item()
-				same_nes_survivors[sample_idx] = running.sum()
+				same_nes_halting[sample_idx] = ~running.sum()
 			else:
 				same_nes_acc[sample_idx] = 0
 				same_nes_seq_acc[sample_idx] = 0
@@ -471,8 +471,8 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 		seq_acc_values += [same_nes_seq_acc.mean()]
 		accuracy_std_values += [same_nes_acc.std()]
 		seq_acc_std_values += [same_nes_seq_acc.std()]
-		avg_survivors += [same_nes_survivors.mean()]
-		std_survivors += [same_nes_survivors.std()]
+		avg_halting += [same_nes_halting.mean()]
+		std_halting += [same_nes_halting.std()]
 		nesting_values += [n]
 
 	df = pd.DataFrame()
@@ -480,13 +480,13 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 	df['Character Accuracy Std'] = accuracy_std_values
 	df['Sequence Accuracy'] = seq_acc_values
 	df['Sequence Accuracy Std'] = seq_acc_std_values
-	df['Avg Survivors'] = avg_survivors
-	df['Std Survivors'] = std_survivors
+	df['Avg Halting'] = avg_halting
+	df['Std Halting'] = std_halting
 	df['Nesting'] = nesting_values
 
 	ax = sns.barplot(data=df, x='Nesting', y='Character Accuracy', label=plot_label, ax=plot_ax, color='tab:blue')
 	if isinstance(model, ModelWrapper):
-		ax = sns.lineplot(x=range(max_nes), y=[s/generator_kwargs['batch_size'] for s in avg_survivors], marker='o', color='tab:cyan')
+		ax = sns.lineplot(x=range(max_nes), y=[s/generator_kwargs['batch_size'] for s in avg_halting], marker='o', color='tab:cyan')
 	return ax, df
 
 if __name__ == "__main__":

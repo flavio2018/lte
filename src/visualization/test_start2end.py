@@ -28,10 +28,10 @@ def main(cfg):
 			filemode='a',
 			format='%(message)s',
 			datefmt='%H:%M:%S',
-			level=logging.DEBUG)
+			level=logging.INFO)
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
-	if cfg.multi:
+	if cfg.multi or cfg.multi_nofilter:
 		model = ModelWrapper(model, cfg)
 	tricks = '_tricks' if cfg.tricks else ''
 	n_samples = f'_{str(cfg.n_samples)}-samples'

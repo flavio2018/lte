@@ -169,6 +169,7 @@ class ModelWrapper:
 		self.use_tricks = cfg.tricks
 		self.use_dfa = cfg.use_dfa
 		self.multi = cfg.multi
+		self.multi_nofilter = cfg.multi_nofilter
 		self.n_samples = cfg.n_samples
 
 	def __call__(self, X, Y=None, tf=False, max_nes=0):
@@ -184,9 +185,11 @@ class ModelWrapper:
 				output = self.fwd_dfa(X, tf=tf)
 			if self.multi:
 				next_inputs, running = self.multi_fwd(X, n_samples=self.n_samples, tf=tf)
+			elif self.multi_nofilter:
+				next_inputs, running = self.multi_fwd_nofilter(X, n_samples=self.n_samples, running=running, tf=tf)
 			else:
 				output = self.model(X, Y=None, tf=tf)
-			if not self.multi:
+			if not self.multi and not self.multi_nofilter:
 				next_inputs, running = self.model_output_to_next_input(X, output, running)
 			X = lte._build_batch([list(i) for i in next_inputs])
 			self.running.append(running)
@@ -255,6 +258,62 @@ class ModelWrapper:
 
 		final_output, running = np.array(final_output), np.array(running)
 		next_input = replace_substrings_in_inputs(chararray_inputs, final_output, running)
+		return next_input, running
+
+	def multi_fwd_nofilter(self, X, n_samples, running, tf=False):
+		def get_outputs_freq(outputs):
+			outputs_freq = dict()
+			for o in outputs:
+				outputs_freq.setdefault(o, 0)
+				outputs_freq[o] += 1
+			return outputs_freq
+
+		multi_output_tensors = []
+		lte = self.model.generator
+		chararray_inputs = np.array([x.replace('#', '') for x in lte.x_to_str(X)])
+
+		logging.info("Sampling...")
+		for sample_idx in range(n_samples):
+			output = self.model(X, Y=None, tf=tf)
+			multi_output_tensors.append(output)
+		logging.info("Done.")
+
+		multi_output = np.array([lte.y_to_str(o) for o in multi_output_tensors]).T  # outputs on the same row correspond to the same input
+		multi_outputs_freq = [get_outputs_freq(o) for o in multi_output]
+		
+		most_frequent_outputs = []
+		for outputs_freqs in multi_outputs_freq:
+			max_freq = -1
+			candidate = None
+			for output, freq in outputs_freqs.items():
+				if freq > max_freq:
+					max_freq = freq
+					candidate = valid_output
+			assert candidate is not None
+			most_frequent_outputs.append(candidate)
+		chararray_outputs = np.array(most_frequent_outputs)
+		
+		# check output structure
+		outputs_have_stopped = have_stopped(chararray_outputs)
+		running &= outputs_have_stopped
+		chararray_outputs = cut_at_first_dot(chararray_outputs, running)
+		max_cut_length = max([len(o) for o in chararray_outputs])
+		
+		logging.info(f"{(~outputs_have_stopped).sum()} outputs have not stopped.")
+		logging.info(f"{running.sum()} outputs are running.")
+		
+		outputs_are_well_formed = contain_one_space(chararray_outputs)
+		logging.info(f"\n{(~outputs_are_well_formed & running).sum()} outputs are not well formed.")
+
+		# check substring in input
+		inputs_do_contain_substrings = inputs_contain_substrings(chararray_inputs, chararray_outputs, running)
+		logging.info(f"\n{(~inputs_do_contain_substrings & running).sum()} outputs have wrong substrings.")
+		
+		running &= inputs_do_contain_substrings
+		next_input = replace_substrings_in_inputs(chararray_inputs, chararray_outputs, running)
+
+		logging.info(f"\n{running.sum()} outputs are running.")
+		
 		return next_input, running
 
 	def fwd_dfa(self, X, tf=False):

@@ -13,6 +13,7 @@ device: 'cuda'
 tricks: false
 use_dfa: false
 multi: false
+multi_nofilter: false
 n_samples: 5
 
 # testing

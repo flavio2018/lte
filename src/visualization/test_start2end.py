@@ -476,6 +476,11 @@ def test_ood_start2end(model, generator, max_nes, num_samples=10, tf=False, gene
 					warnings.warn(warn_str)
 					output = _fix_output_shape(output, Y[:, 1:], generator)
 
+				logging.info("Output")
+				logging.info(generator.y_to_str(output[:20]))
+				logging.info("Target")
+				logging.info(generator.y_to_str(Y[:, 1:][:20]))
+
 				acc_avg, acc_std = batch_acc(output, Y[:, 1:], Y.size(-1), generator)
 				seq_acc_avg, seq_acc_std = batch_seq_acc(output, Y[:, 1:], generator, lenY)
 				same_nes_acc[sample_idx] = acc_avg.item()

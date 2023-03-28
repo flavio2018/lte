@@ -36,22 +36,23 @@ def main(cfg):
 		settings=wandb.Settings(start_method="fork"))
 	wandb.run.name = 'test_ood'
 
-	lte, lte_kwargs = build_generator(cfg)
-	model = load_model(cfg, lte)
-	metric = 'characc'
-	ax, df = test_ood(model, lte, 'Nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs)
-	plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
-		f"../reports/figures/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.pdf"))
-	df = df.set_index('Nesting')
-	df = np.round(df, 5)
-	df.T.to_latex(os.path.join(hydra.utils.get_original_cwd(),
-		f"../reports/tables/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.tex"))	
-	if isinstance(model, UTwRegressionHead):
-		plt.clf()
-		metric = 'huberloss'
-		ax, _ = test_ood(model, lte, 'nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs, regr=True)
+	if cfg.tables:
+		lte, lte_kwargs = build_generator(cfg)
+		model = load_model(cfg, lte)
+		metric = 'characc'
+		ax, df = test_ood(model, lte, 'Nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs)
 		plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 			f"../reports/figures/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.pdf"))
+		df = df.set_index('Nesting')
+		df = np.round(df, 5)
+		df.T.to_latex(os.path.join(hydra.utils.get_original_cwd(),
+			f"../reports/tables/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.tex"))	
+		if isinstance(model, UTwRegressionHead):
+			plt.clf()
+			metric = 'huberloss'
+			ax, _ = test_ood(model, lte, 'nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs, regr=True)
+			plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
+				f"../reports/figures/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.pdf"))
 
 	if cfg.plot_attn:
 		plot_attn(model, lte, generator_kwargs=lte_kwargs)

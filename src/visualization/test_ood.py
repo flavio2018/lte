@@ -192,7 +192,7 @@ def plot_attn(model, generator, generator_kwargs):
 		X, Y, _,_,_ = generator.generate_batch(2, n, **generator_kwargs)
 		first_two_xs = X[:2]
 		pred = model(first_two_xs)
-		first_two_xs_str = lte.x_to_str(first_two_xs)
+		first_two_xs_str = generator.x_to_str(first_two_xs)
 		first_two_xs_str = [x.replace('#', '') for x in first_two_xs_str]
 		
 		for idx, sample in enumerate(first_two_xs_str):

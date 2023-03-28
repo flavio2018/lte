@@ -35,10 +35,10 @@ def main(cfg):
 		mode="online",
 		settings=wandb.Settings(start_method="fork"))
 	wandb.run.name = 'test_ood'
+	lte, lte_kwargs = build_generator(cfg)
+	model = load_model(cfg, lte)
 
 	if cfg.tables:
-		lte, lte_kwargs = build_generator(cfg)
-		model = load_model(cfg, lte)
 		metric = 'characc'
 		ax, df = test_ood(model, lte, 'Nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs)
 		plt.savefig(os.path.join(hydra.utils.get_original_cwd(),

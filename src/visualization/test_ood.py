@@ -29,6 +29,13 @@ def main(cfg):
 			datefmt='%H:%M:%S',
 			level=logging.INFO)
 
+	wandb.init(
+		project="neurips23",
+		entity="flapetr",
+		mode="online",
+		settings=wandb.Settings(start_method="fork"))
+	wandb.run.name = 'test_ood'
+
 	lte, lte_kwargs = build_generator(cfg)
 	model = load_model(cfg, lte)
 	metric = 'characc'

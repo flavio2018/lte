@@ -13,6 +13,7 @@ from model.ut.UniversalTransformer import UniversalTransformer
 from model.test import batch_acc, batch_seq_acc, _fix_output_shape
 import warnings
 import logging
+import wandb
 
 
 @hydra.main(config_path="../../conf/local", config_name="test_ood", version_base='1.2')
@@ -44,6 +45,9 @@ def main(cfg):
 		ax, _ = test_ood(model, lte, 'nesting', use_y=cfg.use_y, tf=cfg.tf, generator_kwargs=lte_kwargs, regr=True)
 		plt.savefig(os.path.join(hydra.utils.get_original_cwd(),
 			f"../reports/figures/{cfg.ckpt[:-4]}_{task_id}_{model_id}_{metric}.pdf"))
+
+	if cfg.plot_attn:
+		plot_attn(model, lte, generator_kwargs=lte_kwargs)
 
 
 def build_generator(cfg):
@@ -167,6 +171,27 @@ def test_ood(model, generator, dp_name, num_samples=10, max_dp_value=10, use_y=F
 	
 	ax = sns.barplot(data=df, x=dp_name, y=y_axis, label=plot_label, ax=plot_ax, color='tab:blue')
 	return ax, df
+
+
+def plot_sample_attn_matrix(sample, attn_matrix):
+	cut_attn_matrix = attn_matrix[:len(sample), :len(sample)]
+	# norm_cut_attn_matrix = (cut_attn_matrix - cut_attn_matrix.mean(axis=1))/cut_attn_matrix.std(axis=1)
+	return sns.heatmap(data=cut_attn_matrix, xticklabels=sample, yticklabels=sample, ax=ax)
+
+
+def plot_attn(model, generator, generator_kwargs):
+	for n in range(1, 10, 2):
+		X, Y, _,_,_ = generator.generate_batch(2, n, **generator_kwargs)
+		first_two_xs = X[:2]
+		pred = model(first_two_xs)
+		first_two_xs_str = lte.x_to_str(first_two_xs)
+		first_two_xs_str = [x.replace('#', '') for x in first_two_xs_str]
+		
+		for idx, sample in enumerate(first_two_xs_str):
+			fig, ax = plt.subplots(1, 1, figsize=(8, 7))
+			attn_matrix = model.encoder.self_attn[idx].cpu().detach().numpy()
+			ax = plot_sample_attn_matrix(sample, attn_matrix)
+			wandb.log({f'N={n}': wandb.Image(fig)})
 
 
 if __name__ == '__main__':

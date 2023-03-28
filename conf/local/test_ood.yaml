@@ -15,6 +15,7 @@ device: 'cuda'
 bs: 128
 tf: false
 use_y: false
+plot_attn: false
 
 # model
 ckpt: ''

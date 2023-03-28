@@ -181,7 +181,7 @@ def test_ood(model, generator, dp_name, num_samples=10, max_dp_value=10, use_y=F
 	return ax, df
 
 
-def plot_sample_attn_matrix(sample, attn_matrix):
+def plot_sample_attn_matrix(sample, attn_matrix, ax=ax):
 	cut_attn_matrix = attn_matrix[:len(sample), :len(sample)]
 	# norm_cut_attn_matrix = (cut_attn_matrix - cut_attn_matrix.mean(axis=1))/cut_attn_matrix.std(axis=1)
 	return sns.heatmap(data=cut_attn_matrix, xticklabels=sample, yticklabels=sample, ax=ax)
@@ -198,7 +198,7 @@ def plot_attn(model, generator, generator_kwargs):
 		for idx, sample in enumerate(first_two_xs_str):
 			fig, ax = plt.subplots(1, 1, figsize=(8, 7))
 			attn_matrix = model.encoder.self_attn[idx].cpu().detach().numpy()
-			ax = plot_sample_attn_matrix(sample, attn_matrix)
+			ax = plot_sample_attn_matrix(sample, attn_matrix, ax=ax)
 			wandb.log({f'N={n}': wandb.Image(fig)})
 
 

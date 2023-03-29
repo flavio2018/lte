@@ -188,7 +188,7 @@ def plot_sample_attn_matrix(sample, attn_matrix, ax):
 
 
 def plot_attn(model, generator, generator_kwargs):
-	for n in range(1, 10, 2):
+	for n in range(1, 6):
 		X, Y, _,_,_ = generator.generate_batch(2, n, **generator_kwargs)
 		first_two_xs = X[:2]
 		pred = model(first_two_xs)
